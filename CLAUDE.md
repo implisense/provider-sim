@@ -38,8 +38,8 @@ provider_sim/
 │   ├── state.py       SupplyChainState, EntityState, EventState, build_state_from_pdl()
 │   └── engine.py      SimulationEngine: 5-Phasen-Step
 │
-└── env/           palaestrAI-Wrapper (optionale Dep)
-    └── environment.py ProviderEnvironment(Environment)
+└── env/           palaestrAI Environment ABC (optionale Dep, Stub-Fallback)
+    └── environment.py ProviderEnvironment(Environment): start_environment/update + reset_dict/step_dict
 ```
 
 ### Abhaengigkeitsrichtung
@@ -57,7 +57,7 @@ provider_sim/
 | `parse_condition()` | `pdl/condition.py` | Condition-String → AST (`ActiveCheck`, `DurationCheck`, `AndExpr`, `OrExpr`) |
 | `SupplyChainState` | `sim/state.py` | Simulationszustand: Entity/Event-States, Graph-Adjazenz, ConditionState-Protokoll |
 | `SimulationEngine` | `sim/engine.py` | 5-Phasen-Step, topologische Sortierung, Impact-Stack |
-| `ProviderEnvironment` | `env/environment.py` | palaestrAI-kompatible Sensor/Actuator/Reward-Schnittstelle |
+| `ProviderEnvironment` | `env/environment.py` | palaestrAI Environment ABC: `start_environment()` → `EnvironmentBaseline`, `update()` → `EnvironmentState` |
 
 ## Simulationsengine — 5-Phasen-Modell
 
@@ -112,26 +112,48 @@ Parsing via String-Split (`" OR "`, `" AND "`), dann Regex-Match pro Atom. Kein 
 
 ## palaestrAI-Environment
 
+`ProviderEnvironment` implementiert das palaestrAI `Environment` ABC. palaestrai ist eine optionale Abhaengigkeit — ohne Installation werden Stub-Klassen verwendet (`_HAS_PALAESTRAI`-Flag).
+
+### API (palaestrAI-Orchestrator)
+
+| Methode | Rueckgabe | Beschreibung |
+|---|---|---|
+| `start_environment()` | `EnvironmentBaseline` | Reset + Baseline mit `sensors_available`, `actuators_available`, `SimTime(ticks=0)` |
+| `update(actuators: List[ActuatorInformation])` | `EnvironmentState` | Step: `sensor_information`, `rewards`, `done`, `SimTime` |
+
+Konstruktor: `ProviderEnvironment(pdl_source, seed=0, max_ticks=365, uid="provider_env", broker_uri="")`
+
+### API (Standalone, ohne Orchestrator)
+
+| Methode | Rueckgabe | Beschreibung |
+|---|---|---|
+| `reset_dict()` | `(obs: Dict, rewards: Dict)` | Reset, gibt flache Dicts zurueck |
+| `step_dict(actions: Dict)` | `(obs: Dict, rewards: Dict, done: bool)` | Step mit `{"attacker.<id>": float, "defender.<id>": float}` |
+
+### palaestrAI-Typen
+
+Sensoren liefern `SensorInformation(sensor_value, observation_space, sensor_id)`, Aktuatoren verwenden `ActuatorInformation(setpoint, action_space, actuator_id)`, Rewards sind `RewardInformation(reward_value, observation_space, reward_id)`. Spaces: `Box(low, high, shape=(1,), dtype=np.float32)` und `Discrete(n)`.
+
 ### Sensoren
 
 Pro Entity 4 + pro Event 1 + 1 global:
-- `entity.<id>.supply` — Box(0, 2)
-- `entity.<id>.demand` — Box(0, 3)
-- `entity.<id>.price` — Box(0, 10)
-- `entity.<id>.health` — Box(0, 1)
-- `event.<id>.active` — Discrete(2)
-- `sim.tick` — Box(0, max_ticks)
+- `entity.<id>.supply` — `Box(0, 2)`, Wert: `np.array([float], dtype=np.float32)`
+- `entity.<id>.demand` — `Box(0, 3)`, Wert: `np.array([float], dtype=np.float32)`
+- `entity.<id>.price` — `Box(0, 10)`, Wert: `np.array([float], dtype=np.float32)`
+- `entity.<id>.health` — `Box(0, 1)`, Wert: `np.array([float], dtype=np.float32)`
+- `event.<id>.active` — `Discrete(2)`, Wert: `int` (0 oder 1)
+- `sim.tick` — `Box(0, max_ticks)`, Wert: `np.array([float], dtype=np.float32)`
 
 ### Aktuatoren
 
 Pro Entity 2:
-- `attacker.<entity_id>` — Box(0, 1) — Disruptionsstaerke
-- `defender.<entity_id>` — Box(0, 1) — Verteidigungsstaerke
+- `attacker.<entity_id>` — `Box(0, 1)` — Disruptionsstaerke
+- `defender.<entity_id>` — `Box(0, 1)` — Verteidigungsstaerke
 
 ### Rewards (Zero-Sum)
 
-- `reward.attacker` = mean(1 − health)
-- `reward.defender` = mean(health)
+- `reward.attacker` = `RewardInformation(np.array([mean(1 − health)]), Box(0,1))`
+- `reward.defender` = `RewardInformation(np.array([mean(health)]), Box(0,1))`
 - Summe ist immer 1.0
 
 ### Soja-Szenario: 99 Sensoren, 40 Aktuatoren
@@ -145,7 +167,7 @@ tests/
 ├── test_condition.py        AST-Konstruktion, Auswertung mit MockState
 ├── test_sim_state.py        State-Init, Entity-Count, Adjazenz, ConditionState-Protokoll
 ├── test_sim_engine.py       Tick, Reset, Attacker/Defender, Kaskaden, 365-Tick
-├── test_env_environment.py  Sensor/Actuator-Counts, Reset, Step, Zero-Sum, Pfad-Laden
+├── test_env_environment.py  3 Testklassen: ProviderEnvironment, PalaestrAIProtocol, DictInterface (17 Tests)
 └── test_integration.py      Alle 9 Szenarien × 365 Ticks ohne Crash
 ```
 
