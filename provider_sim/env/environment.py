@@ -128,7 +128,7 @@ except ImportError:
         ) -> None:
             self.sensors_available = sensors_available
             self.actuators_available = actuators_available
-            self.simtime = simtime or SimTime(simtime_ticks=1)
+            self.simtime = simtime or SimTime(simtime_ticks=1, simtime_timestamp=None)
 
     class EnvironmentState:  # type: ignore[no-redef]
         def __init__(
@@ -246,7 +246,7 @@ class ProviderEnvironment(_BaseEnv):
         return EnvironmentBaseline(
             sensors_available=sensors,
             actuators_available=actuators,
-            simtime=SimTime(simtime_ticks=0),
+            simtime=SimTime(simtime_ticks=0, simtime_timestamp=None),
         )
 
     def update(
@@ -273,7 +273,7 @@ class ProviderEnvironment(_BaseEnv):
             sensor_information=self._build_sensors(),
             rewards=self._build_rewards(),
             done=done,
-            simtime=SimTime(simtime_ticks=self.engine.state.tick),
+            simtime=SimTime(simtime_ticks=self.engine.state.tick, simtime_timestamp=None),
         )
 
     # ---- Standalone step (non-palaestrAI usage) ---------------------------

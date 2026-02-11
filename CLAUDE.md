@@ -16,10 +16,10 @@ pip install -e ".[dev]"
 pytest tests/ -v
 
 # Schnelltest: Soja-Szenario laden
-python -c "from provider_sim.pdl.parser import load_pdl; doc = load_pdl('/Users/aschaefer/Projekte/Forschung/PROVIDER/05_Provider_PDL/scenarios/s1-soja.pdl.yaml'); print(len(doc.entities))"
+python -c "from provider_sim.pdl.parser import load_pdl; doc = load_pdl('/Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/pdl viewer/scenarios/s1-soja.pdl.yaml'); print(len(doc.entities))"
 
 # 365-Tick-Simulation
-python -c "from provider_sim.sim.engine import SimulationEngine; from provider_sim.pdl.parser import load_pdl; e = SimulationEngine(load_pdl('/Users/aschaefer/Projekte/Forschung/PROVIDER/05_Provider_PDL/scenarios/s1-soja.pdl.yaml')); [e.step() for _ in range(365)]; print('OK')"
+python -c "from provider_sim.sim.engine import SimulationEngine; from provider_sim.pdl.parser import load_pdl; e = SimulationEngine(load_pdl('/Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/pdl viewer/scenarios/s1-soja.pdl.yaml')); [e.step() for _ in range(365)]; print('OK')"
 ```
 
 ## Architektur
@@ -167,18 +167,16 @@ tests/
 ├── test_condition.py        AST-Konstruktion, Auswertung mit MockState
 ├── test_sim_state.py        State-Init, Entity-Count, Adjazenz, ConditionState-Protokoll
 ├── test_sim_engine.py       Tick, Reset, Attacker/Defender, Kaskaden, 365-Tick
-├── test_env_environment.py  3 Testklassen: ProviderEnvironment, PalaestrAIProtocol, DictInterface (17 Tests)
+├── test_env_environment.py  4 Testklassen: ProviderEnvironment, PalaestrAIProtocol, DictInterface, UidPrepending (22 Tests)
 └── test_integration.py      Alle 9 Szenarien × 365 Ticks ohne Crash
 ```
 
-`any_scenario_path` ist ein parametrisiertes Fixture ueber alle 9 PDL-YAML-Dateien in `05_Provider_PDL/scenarios/`.
+`any_scenario_path` ist ein parametrisiertes Fixture ueber alle 9 PDL-YAML-Dateien in `04_Apps/pdl viewer/scenarios/`.
 
 ## Referenzdateien (ausserhalb dieses Repos)
 
-- PDL-Schema: `05_Provider_PDL/schemas/pdl-schema.json`
-- PDL-Szenarien: `05_Provider_PDL/scenarios/s[1-9]-*.pdl.yaml`
-- Node.js-Referenzparser: `05_Provider_PDL/src/adapters/scenarioLoader.js`
-- Szenario-Dokumentation: `05_Provider_PDL/scenarios/PROVIDER-Szenarien-Dokumentation.md`
+- PDL-Szenarien: `04_Apps/pdl viewer/scenarios/s[1-9]-*.pdl.yaml`
+- Szenario-Dokumentation: `04_Apps/pdl viewer/scenarios/PROVIDER-Szenarien-Dokumentation.md`
 
 ## Konventionen
 

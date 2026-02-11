@@ -154,3 +154,62 @@ class TestDictInterface:
             if done:
                 break
         assert done
+
+
+class TestUidPrepending:
+    """Verify that IDs work correctly with palaestrAI's _prepend_uid/_remove_uid."""
+
+    def test_sensor_ids_are_bare(self, soja_doc):
+        """Environment must return bare sensor IDs (no uid prefix)."""
+        env = ProviderEnvironment(soja_doc, uid="test_uid")
+        baseline = env.start_environment()
+        for s in baseline.sensors_available:
+            assert not s.sensor_id.startswith(
+                "test_uid."
+            ), f"Sensor ID already prefixed: {s.sensor_id}"
+
+    def test_actuator_ids_are_bare(self, soja_doc):
+        """Environment must return bare actuator IDs (no uid prefix)."""
+        env = ProviderEnvironment(soja_doc, uid="test_uid")
+        baseline = env.start_environment()
+        for a in baseline.actuators_available:
+            assert not a.actuator_id.startswith(
+                "test_uid."
+            ), f"Actuator ID already prefixed: {a.actuator_id}"
+
+    def test_reward_ids_are_bare(self, soja_doc):
+        """Rewards must use bare IDs (framework never prepends rewards)."""
+        env = ProviderEnvironment(soja_doc, uid="test_uid")
+        env.start_environment()
+        state = env.update([])
+        for r in state.rewards:
+            assert not r.reward_id.startswith(
+                "test_uid."
+            ), f"Reward ID prefixed: {r.reward_id}"
+
+    def test_update_with_bare_actuators(self, soja_doc):
+        """Simulate framework round-trip: prepend uid, remove uid, then update()."""
+        env = ProviderEnvironment(soja_doc, uid="test_uid")
+        baseline = env.start_environment()
+        # Simulate _prepend_uid: prefix all actuator IDs
+        for a in baseline.actuators_available:
+            a.actuator_id = f"test_uid.{a.actuator_id}"
+        # Simulate _remove_uid: strip prefix before calling update
+        for a in baseline.actuators_available:
+            a.actuator_id = a.actuator_id.removeprefix("test_uid.")
+        # update() should work with bare IDs
+        state = env.update(baseline.actuators_available)
+        assert len(state.sensor_information) == 99
+
+    def test_config_generator_uid_matches(self, soja_path):
+        """Config generator must use same uid as environment section."""
+        from experiments.generate_config import build_config
+
+        config = build_config(str(soja_path), uid="my_env")
+        env_section = config["schedule"][0]["phase_train"]["environments"][0]
+        env_uid = env_section["environment"]["uid"]
+        sensor_ids = config["schedule"][0]["phase_train"]["agents"][0]["sensors"]
+        actuator_ids = config["schedule"][0]["phase_train"]["agents"][0]["actuators"]
+        assert env_uid == "my_env"
+        assert all(s.startswith("my_env.") for s in sensor_ids)
+        assert all(a.startswith("my_env.") for a in actuator_ids)
