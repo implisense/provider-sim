@@ -71,7 +71,7 @@ def build_config(
                             },
                             "reward": {
                                 "name": "palaestrai.agent.dummy_objective:DummyObjective",
-                                "params": {},
+                                "params": {"params": {}},
                             },
                         }
                     ],
@@ -115,7 +115,7 @@ def build_config(
                         "name": "palaestrai.simulation.vanilla_sim_controller:VanillaSimController",
                         "conditions": [
                             {
-                                "name": "palaestrai.simulation.vanilla_simulation_termination_condition:VanillaSimulationTerminationCondition",
+                                "name": "palaestrai.simulation.vanilla_simcontroller_termination_condition:VanillaSimControllerTerminationCondition",
                                 "params": {},
                             }
                         ],

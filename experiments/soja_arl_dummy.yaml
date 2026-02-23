@@ -8,11 +8,12 @@ schedule:
         name: provider_sim.env.environment:ProviderEnvironment
         uid: provider_env
         params:
-          pdl_source: /Users/aschaefer/Projekte/Forschung/PROVIDER/05_Provider_PDL/scenarios/s1-soja.pdl.yaml
+          pdl_source: /Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/pdl viewer/scenarios/s1-soja.pdl.yaml
           max_ticks: 365
       reward:
         name: palaestrai.agent.dummy_objective:DummyObjective
-        params: {}
+        params:
+          params: {}
     agents:
     - name: attacker
       brain:
@@ -182,7 +183,7 @@ schedule:
     simulation:
       name: palaestrai.simulation.vanilla_sim_controller:VanillaSimController
       conditions:
-      - name: palaestrai.simulation.vanilla_simulation_termination_condition:VanillaSimulationTerminationCondition
+      - name: palaestrai.simulation.vanilla_simcontroller_termination_condition:VanillaSimControllerTerminationCondition
         params: {}
     phase_config:
       mode: train

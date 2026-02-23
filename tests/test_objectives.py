@@ -29,12 +29,12 @@ def _make_rewards(attacker_val: float, defender_val: float):
 
 class TestAttackerObjective:
     def test_filters_attacker_reward(self):
-        obj = AttackerObjective({"reward_id": "reward.attacker"})
+        obj = AttackerObjective(reward_id="reward.attacker")
         rewards = _make_rewards(0.7, 0.3)
         assert obj.internal_reward(rewards) == pytest.approx(0.7)
 
     def test_returns_zero_when_reward_missing(self):
-        obj = AttackerObjective({"reward_id": "reward.attacker"})
+        obj = AttackerObjective(reward_id="reward.attacker")
         rewards = [
             RewardInformation(
                 np.array([0.5], dtype=np.float32),
@@ -45,11 +45,11 @@ class TestAttackerObjective:
         assert obj.internal_reward(rewards) == 0.0
 
     def test_default_reward_id(self):
-        obj = AttackerObjective({})
+        obj = AttackerObjective()
         assert obj._reward_id == "reward.attacker"
 
     def test_custom_reward_id(self):
-        obj = AttackerObjective({"reward_id": "custom.attacker"})
+        obj = AttackerObjective(reward_id="custom.attacker")
         rewards = [
             RewardInformation(
                 np.array([0.9], dtype=np.float32),
@@ -60,18 +60,18 @@ class TestAttackerObjective:
         assert obj.internal_reward(rewards) == pytest.approx(0.9)
 
     def test_empty_rewards_list(self):
-        obj = AttackerObjective({})
+        obj = AttackerObjective()
         assert obj.internal_reward([]) == 0.0
 
 
 class TestDefenderObjective:
     def test_filters_defender_reward(self):
-        obj = DefenderObjective({"reward_id": "reward.defender"})
+        obj = DefenderObjective(reward_id="reward.defender")
         rewards = _make_rewards(0.7, 0.3)
         assert obj.internal_reward(rewards) == pytest.approx(0.3)
 
     def test_returns_zero_when_reward_missing(self):
-        obj = DefenderObjective({"reward_id": "reward.defender"})
+        obj = DefenderObjective(reward_id="reward.defender")
         rewards = [
             RewardInformation(
                 np.array([0.5], dtype=np.float32),
@@ -82,11 +82,11 @@ class TestDefenderObjective:
         assert obj.internal_reward(rewards) == 0.0
 
     def test_default_reward_id(self):
-        obj = DefenderObjective({})
+        obj = DefenderObjective()
         assert obj._reward_id == "reward.defender"
 
     def test_custom_reward_id(self):
-        obj = DefenderObjective({"reward_id": "custom.defender"})
+        obj = DefenderObjective(reward_id="custom.defender")
         rewards = [
             RewardInformation(
                 np.array([0.4], dtype=np.float32),
@@ -97,13 +97,13 @@ class TestDefenderObjective:
         assert obj.internal_reward(rewards) == pytest.approx(0.4)
 
     def test_empty_rewards_list(self):
-        obj = DefenderObjective({})
+        obj = DefenderObjective()
         assert obj.internal_reward([]) == 0.0
 
     def test_zero_sum_property(self):
         """Both objectives should sum to 1.0 for a valid zero-sum pair."""
-        attacker = AttackerObjective({})
-        defender = DefenderObjective({})
+        attacker = AttackerObjective()
+        defender = DefenderObjective()
         rewards = _make_rewards(0.6, 0.4)
         total = attacker.internal_reward(rewards) + defender.internal_reward(rewards)
         assert total == pytest.approx(1.0)

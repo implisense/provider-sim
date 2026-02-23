@@ -18,8 +18,14 @@ pytest tests/ -v
 # Schnelltest: Soja-Szenario laden
 python -c "from provider_sim.pdl.parser import load_pdl; doc = load_pdl('/Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/pdl viewer/scenarios/s1-soja.pdl.yaml'); print(len(doc.entities))"
 
-# 365-Tick-Simulation
+# 365-Tick-Simulation (standalone, ohne palaestrAI)
 python -c "from provider_sim.sim.engine import SimulationEngine; from provider_sim.pdl.parser import load_pdl; e = SimulationEngine(load_pdl('/Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/pdl viewer/scenarios/s1-soja.pdl.yaml')); [e.step() for _ in range(365)]; print('OK')"
+
+# palaestrAI-Experiment-Config generieren
+python experiments/generate_config.py <pdl_path> --output experiments/out.yaml --max-ticks 365
+
+# palaestrAI-Experiment ausfuehren (NICHT mit -vv!)
+palaestrai experiment-start experiments/soja_arl_dummy.yaml
 ```
 
 ## Architektur
@@ -39,7 +45,8 @@ provider_sim/
 │   └── engine.py      SimulationEngine: 5-Phasen-Step
 │
 └── env/           palaestrAI Environment ABC (optionale Dep, Stub-Fallback)
-    └── environment.py ProviderEnvironment(Environment): start_environment/update + reset_dict/step_dict
+    ├── environment.py ProviderEnvironment(Environment): start_environment/update + reset_dict/step_dict
+    └── objectives.py  AttackerObjective / DefenderObjective (reward_id-basiert)
 ```
 
 ### Abhaengigkeitsrichtung
@@ -58,6 +65,8 @@ provider_sim/
 | `SupplyChainState` | `sim/state.py` | Simulationszustand: Entity/Event-States, Graph-Adjazenz, ConditionState-Protokoll |
 | `SimulationEngine` | `sim/engine.py` | 5-Phasen-Step, topologische Sortierung, Impact-Stack |
 | `ProviderEnvironment` | `env/environment.py` | palaestrAI Environment ABC: `start_environment()` → `EnvironmentBaseline`, `update()` → `EnvironmentState` |
+| `AttackerObjective` | `env/objectives.py` | Filtert `reward.attacker` aus RewardInformation-Liste |
+| `DefenderObjective` | `env/objectives.py` | Filtert `reward.defender` aus RewardInformation-Liste |
 
 ## Simulationsengine — 5-Phasen-Modell
 
@@ -158,7 +167,41 @@ Pro Entity 2:
 
 ### Soja-Szenario: 99 Sensoren, 40 Aktuatoren
 
-## Tests
+### Objectives (ARL)
+
+`AttackerObjective` und `DefenderObjective` in `env/objectives.py` implementieren `_BaseObjective.internal_reward()`. Sie filtern die Reward-Liste nach `reward_id` (default `"reward.attacker"` bzw. `"reward.defender"`). Beide nutzen den gleichen Stub-Fallback-Mechanismus wie `environment.py`.
+
+## Experimente (palaestrAI)
+
+### Config-Generierung
+
+```bash
+# YAML-Konfiguration aus PDL-Szenario generieren
+python experiments/generate_config.py <pdl_path> \
+    --output experiments/soja_arl_dummy.yaml \
+    --max-ticks 365 --episodes 1 --seed 42
+```
+
+`experiments/generate_config.py` liest ein PDL-Szenario, extrahiert alle Entities/Events und erzeugt ein vollstaendiges palaestrAI-Experiment-YAML mit Attacker/Defender-Agenten (DummyBrain/DummyMuscle fuer Baseline-Tests).
+
+### Experiment ausfuehren
+
+```bash
+# Experiment starten (OHNE -vv!)
+palaestrai experiment-start experiments/soja_arl_dummy.yaml
+
+# Ergebnisse liegen in palaestrai.db (SQLite)
+```
+
+### Operationelle Hinweise
+
+- **Kein `-vv`**: Verbose-Logging erzeugt 500+ MB Output mit binaeren DB-Daten und fuehrt zu I/O-Stagnation. Standard-Verbosity reicht.
+- **Ports 4242/4243**: palaestrAI nutzt ZMQ-Messaging. Vor dem Start pruefen: `lsof -i :4242 -i :4243`. Alte Prozesse ggf. beenden.
+- **Laufzeit**: Soja-Szenario mit 365 Ticks und DummyBrain dauert ca. 3 Minuten (~0.57s/Tick).
+- **Kein Mid-Episode-Resume**: Abgebrochene Episoden starten von vorn. Nur abgeschlossene Episoden bleiben in der DB.
+- **Ergebnis-DB**: `palaestrai.db` enthaelt `world_states` (Sensor-Dumps als JSON in `state_dump`), `muscle_actions`, `brain_states` etc.
+
+## Tests (95 Tests)
 
 ```
 tests/
@@ -168,6 +211,7 @@ tests/
 ├── test_sim_state.py        State-Init, Entity-Count, Adjazenz, ConditionState-Protokoll
 ├── test_sim_engine.py       Tick, Reset, Attacker/Defender, Kaskaden, 365-Tick
 ├── test_env_environment.py  4 Testklassen: ProviderEnvironment, PalaestrAIProtocol, DictInterface, UidPrepending (22 Tests)
+├── test_objectives.py       AttackerObjective, DefenderObjective: Filterung, Default-Werte, Zero-Sum (11 Tests)
 └── test_integration.py      Alle 9 Szenarien × 365 Ticks ohne Crash
 ```
 

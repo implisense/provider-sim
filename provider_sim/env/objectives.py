@@ -50,13 +50,13 @@ except ImportError:
 class AttackerObjective(_BaseObjective):
     """Objective for the attacker agent.
 
-    Extracts the reward identified by ``params["reward_id"]``
+    Extracts the reward identified by ``reward_id``
     (default ``"reward.attacker"``) from the environment's reward list.
     """
 
-    def __init__(self, params: dict) -> None:
-        super().__init__(params)
-        self._reward_id: str = params.get("reward_id", "reward.attacker")
+    def __init__(self, reward_id: str = "reward.attacker", **kwargs: Any) -> None:
+        super().__init__({"reward_id": reward_id, **kwargs})
+        self._reward_id = reward_id
 
     def internal_reward(self, rewards: List[RewardInformation]) -> float:
         for r in rewards:
@@ -68,13 +68,13 @@ class AttackerObjective(_BaseObjective):
 class DefenderObjective(_BaseObjective):
     """Objective for the defender agent.
 
-    Extracts the reward identified by ``params["reward_id"]``
+    Extracts the reward identified by ``reward_id``
     (default ``"reward.defender"``) from the environment's reward list.
     """
 
-    def __init__(self, params: dict) -> None:
-        super().__init__(params)
-        self._reward_id: str = params.get("reward_id", "reward.defender")
+    def __init__(self, reward_id: str = "reward.defender", **kwargs: Any) -> None:
+        super().__init__({"reward_id": reward_id, **kwargs})
+        self._reward_id = reward_id
 
     def internal_reward(self, rewards: List[RewardInformation]) -> float:
         for r in rewards:
