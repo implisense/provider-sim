@@ -15,6 +15,9 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")  # kein Display noetig
+import matplotlib.pyplot as plt
 
 _BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_BASE))
@@ -111,11 +114,71 @@ def run_episodes(
     return health_data, entity_ids
 
 
+def plot_heatmap(
+    health_data: np.ndarray,
+    entity_ids: list,
+    output_path: str,
+    episodes: int,
+    ticks: int,
+    attack_budget: float,
+    defend_budget: float,
+) -> None:
+    """Save health heatmap: entities (Y) x ticks (X), colour = mean health."""
+    mean_health = health_data.mean(axis=0)
+
+    sort_idx = np.argsort(mean_health.mean(axis=1))
+    mean_health_sorted = mean_health[sort_idx]
+    labels_sorted = [entity_ids[i] for i in sort_idx]
+
+    fig, ax = plt.subplots(figsize=(14, 8))
+    im = ax.imshow(
+        mean_health_sorted,
+        aspect="auto",
+        cmap="RdYlGn",
+        vmin=0.0,
+        vmax=1.0,
+        interpolation="nearest",
+    )
+
+    ax.set_yticks(range(len(labels_sorted)))
+    ax.set_yticklabels(labels_sorted, fontsize=9)
+    ax.set_xlabel("Tick (Tag)", fontsize=11)
+    ax.set_ylabel("Entity", fontsize=11)
+    ax.set_title(
+        f"Soja-Lieferkette — Ø Health über {episodes} Episoden\n"
+        f"Attacker={attack_budget:.1f}  Defender={defend_budget:.1f}  "
+        f"Ticks={ticks}",
+        fontsize=12,
+    )
+
+    tick_step = max(1, ticks // 12)
+    ax.set_xticks(range(0, ticks, tick_step))
+
+    cbar = fig.colorbar(im, ax=ax, shrink=0.8)
+    cbar.set_label("Ø Health (0=kritisch, 1=stabil)", fontsize=10)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  Heatmap gespeichert: {output_path}")
+
+
 if __name__ == "__main__":
     args = parse_args()
     print(f"Starte {args.episodes} Episoden × {args.ticks} Ticks …")
+    print(f"  Attack={args.attack}  Defend={args.defend}  Seed={args.seed}")
+
     health_data, entity_ids = run_episodes(
         args.episodes, args.ticks, args.attack, args.defend, args.seed
     )
-    print(f"health_data shape: {health_data.shape}")
-    print(f"mean health (alle Entities, alle Episoden): {health_data.mean():.4f}")
+
+    mean_all = health_data.mean()
+    min_entity = entity_ids[health_data.mean(axis=(0, 2)).argmin()]
+    print(f"  Ø Health gesamt     : {mean_all:.4f}")
+    print(f"  Kritischste Entity  : {min_entity}")
+
+    print("Erstelle Heatmap …")
+    plot_heatmap(
+        health_data, entity_ids, args.output,
+        args.episodes, args.ticks, args.attack, args.defend,
+    )
