@@ -36,6 +36,34 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+
+
+def attacker_policy(
+    entities: list,
+    obs: dict,
+    budget: float,
+) -> dict:
+    """Vulnerability-weighted attack: high-vulnerability entities get more pressure."""
+    vulns = np.array([e.vulnerability for e in entities], dtype=np.float32)
+    weights = vulns / vulns.sum() if vulns.sum() > 0 else np.ones(len(entities)) / len(entities)
+    return {f"attacker.{e.id}": float(budget * w) for e, w in zip(entities, weights)}
+
+
+def defender_policy(
+    entities: list,
+    obs: dict,
+    budget: float,
+) -> dict:
+    """Reactive defense: entities with lowest health get strongest defense."""
+    healths = np.array(
+        [obs.get(f"entity.{e.id}.health", 1.0) for e in entities],
+        dtype=np.float32,
+    )
+    inv = 1.0 - healths
+    total = inv.sum()
+    weights = inv / total if total > 0 else np.ones(len(entities)) / len(entities)
+    return {f"defender.{e.id}": float(budget * w) for e, w in zip(entities, weights)}
+
 if __name__ == "__main__":
     args = parse_args()
     print(f"Episodes: {args.episodes}, Ticks: {args.ticks}")
