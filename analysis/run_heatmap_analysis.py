@@ -85,6 +85,29 @@ def preventive_defender_policy(
     return {f"defender.{e.id}": float(budget * w) for e, w in zip(entities, weights)}
 
 
+
+def hybrid_defender_policy(
+    entities: list,
+    obs: dict,
+    budget: float,
+    alpha: float = 0.5,
+) -> dict:
+    """Blend of preventive (vulnerability) and reactive (inverse-health) defense.
+
+    alpha=1.0 -> purely preventive (vulnerability-weighted)
+    alpha=0.0 -> purely reactive (inverse-health-weighted)
+    """
+    vulns = np.array([e.vulnerability for e in entities], dtype=np.float32)
+    prev_w = vulns / vulns.sum() if vulns.sum() > 0 else np.ones(len(entities), dtype=np.float32) / len(entities)
+
+    healths = np.array([obs.get(f"entity.{e.id}.health", 1.0) for e in entities], dtype=np.float32)
+    inv = 1.0 - healths
+    react_w = inv / inv.sum() if inv.sum() > 0 else np.ones(len(entities), dtype=np.float32) / len(entities)
+
+    weights = alpha * prev_w + (1.0 - alpha) * react_w
+    return {f"defender.{e.id}": float(budget * w) for e, w in zip(entities, weights)}
+
+
 def run_episodes(
     episodes: int,
     ticks: int,
