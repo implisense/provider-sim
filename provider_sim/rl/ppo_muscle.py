@@ -29,7 +29,7 @@ class PPOMuscle(Muscle):
         n_act:  int   -- action size (default 20)
     """
 
-    def __init__(self, *args, budget: float = 0.8, n_obs: int = 99, n_act: int = 20, **kwargs) -> None:
+    def __init__(self, *args, budget: float = 0.8, n_obs: int = 99, n_act: int = 20, checkpoint_path: str = "", **kwargs) -> None:
         try:
             super().__init__(*args, **kwargs)
         except TypeError:
@@ -37,10 +37,17 @@ class PPOMuscle(Muscle):
         self._budget = float(budget)
         self._n_obs = int(n_obs)
         self._n_act = int(n_act)
+        self._checkpoint_path = str(checkpoint_path)
         self._net: PPONet | None = None
 
     def setup(self) -> None:
+        import os
         self._net = PPONet(n_obs=self._n_obs, n_act=self._n_act).to(_DEVICE)
+        if self._checkpoint_path and os.path.isfile(self._checkpoint_path):
+            self._net.load_state_dict(
+                torch.load(self._checkpoint_path, map_location=_DEVICE, weights_only=True)
+            )
+            print(f"[PPOMuscle] Loaded checkpoint: {self._checkpoint_path}")
         self._net.eval()  # inference mode
 
     def propose_actions(self, sensors, actuators_available, is_terminal: bool = False):

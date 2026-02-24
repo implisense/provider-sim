@@ -29,6 +29,7 @@ schedule:
       brain:
         name: provider_sim.rl.ppo_brain:PPOBrain
         params:
+          checkpoint_path: /Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/palestrai_simulation/experiments/checkpoints/attacker.pt
           clip_eps: 0.2
           entropy_coef: 0.01
           gae_lambda: 0.95
@@ -42,6 +43,7 @@ schedule:
         name: provider_sim.rl.ppo_muscle:PPOMuscle
         params:
           budget: 0.8
+          checkpoint_path: /Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/palestrai_simulation/experiments/checkpoints/attacker.pt
           n_act: 20
           n_obs: 99
       name: attacker
@@ -173,6 +175,7 @@ schedule:
       brain:
         name: provider_sim.rl.ppo_brain:PPOBrain
         params:
+          checkpoint_path: /Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/palestrai_simulation/experiments/checkpoints/defender.pt
           clip_eps: 0.2
           entropy_coef: 0.01
           gae_lambda: 0.95
@@ -186,6 +189,7 @@ schedule:
         name: provider_sim.rl.ppo_muscle:PPOMuscle
         params:
           budget: 0.4
+          checkpoint_path: /Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/palestrai_simulation/experiments/checkpoints/defender.pt
           n_act: 20
           n_obs: 99
       name: defender
@@ -206,7 +210,7 @@ schedule:
         params:
           params: {}
     phase_config:
-      episodes: 4
+      episodes: 1
       mode: train
       worker: 1
     simulation:

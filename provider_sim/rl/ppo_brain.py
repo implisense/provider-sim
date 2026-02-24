@@ -40,6 +40,7 @@ class PPOBrain(Brain):
         clip_eps: float = 0.2, ppo_epochs: int = 4,
         value_coef: float = 0.5, entropy_coef: float = 0.01,
         min_episode_steps: int = 10,
+        checkpoint_path: str = "",
         **kwargs,
     ) -> None:
         try:
@@ -56,6 +57,7 @@ class PPOBrain(Brain):
         self._value_coef = float(value_coef)
         self._entropy_coef = float(entropy_coef)
         self._min_episode_steps = int(min_episode_steps)
+        self._checkpoint_path = str(checkpoint_path)
 
         # Init on CPU: palaestrAI spawns Brain in a subprocess via multiprocessing,
         # which requires serialization. MPS tensors cannot cross process boundaries.
@@ -63,6 +65,14 @@ class PPOBrain(Brain):
         self._net = PPONet(n_obs=self._n_obs, n_act=self._n_act)
         self._optimizer = torch.optim.Adam(self._net.parameters(), lr=self._lr)
         self._on_device = False
+
+        # Auto-load checkpoint from previous training run (external loop)
+        import os
+        if self._checkpoint_path and os.path.isfile(self._checkpoint_path):
+            self._net.load_state_dict(
+                torch.load(self._checkpoint_path, map_location="cpu", weights_only=True)
+            )
+            print(f"[PPOBrain] Loaded checkpoint: {self._checkpoint_path}")
 
         self._obs_buf: list = []
         self._logits_buf: list = []
@@ -140,6 +150,13 @@ class PPOBrain(Brain):
         )
 
         state_dict = self._ppo_update(next_value=0.0)
+
+        # Persist checkpoint for external training loop
+        if self._checkpoint_path:
+            import os
+            os.makedirs(os.path.dirname(self._checkpoint_path) or ".", exist_ok=True)
+            torch.save(state_dict, self._checkpoint_path)
+            print(f"[PPOBrain] Checkpoint saved: {self._checkpoint_path}")
 
         self._obs_buf.clear()
         self._logits_buf.clear()
