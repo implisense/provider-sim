@@ -39,7 +39,10 @@ class PPOBrain(Brain):
         value_coef: float = 0.5, entropy_coef: float = 0.01,
         **kwargs,
     ) -> None:
-        super().__init__(*args, **kwargs)
+        try:
+            super().__init__(*args, **kwargs)
+        except TypeError:
+            pass  # standalone usage without palaestrAI orchestrator
         self._n_obs = int(n_obs)
         self._n_act = int(n_act)
         self._lr = float(lr)
@@ -154,14 +157,14 @@ class PPOBrain(Brain):
             gae = delta + self._gamma * self._gae_lambda * (1.0 - float(self._done_buf[t])) * gae
             advantages[t] = gae
         returns = advantages + np.array(self._value_buf, dtype=np.float32)
-        adv_t = torch.tensor(advantages)
+        adv_t = torch.tensor(advantages.tolist(), dtype=torch.float32)
         adv_t = (adv_t - adv_t.mean()) / (adv_t.std() + 1e-8)
-        return adv_t, torch.tensor(returns)
+        return adv_t, torch.tensor(returns.tolist(), dtype=torch.float32)
 
     def _ppo_update(self, next_value: float) -> dict:
         """Run PPO update on accumulated trajectory. Returns new state_dict."""
-        obs_t = torch.tensor(np.stack(self._obs_buf), dtype=torch.float32)
-        logits_t = torch.tensor(np.stack(self._logits_buf), dtype=torch.float32)
+        obs_t = torch.tensor(np.stack(self._obs_buf).tolist(), dtype=torch.float32)
+        logits_t = torch.tensor(np.stack(self._logits_buf).tolist(), dtype=torch.float32)
         old_log_prob_t = torch.tensor(self._log_prob_buf, dtype=torch.float32)
         advantages, returns = self._compute_gae(next_value)
 

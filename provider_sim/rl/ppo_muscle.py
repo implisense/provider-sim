@@ -25,7 +25,10 @@ class PPOMuscle(Muscle):
     """
 
     def __init__(self, *args, budget: float = 0.8, n_obs: int = 99, n_act: int = 20, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+        try:
+            super().__init__(*args, **kwargs)
+        except TypeError:
+            pass  # standalone usage without palaestrAI orchestrator
         self._budget = float(budget)
         self._n_obs = int(n_obs)
         self._n_act = int(n_act)
@@ -57,7 +60,9 @@ class PPOMuscle(Muscle):
         with torch.no_grad():
             actions_t, sampled_logits, log_prob, value = self._net.sample_action(obs, self._budget)
 
-        actions_np = actions_t.numpy()
+        actions_np = np.array(actions_t.tolist(), dtype=np.float32)
+        sampled_logits_np = np.array(sampled_logits.tolist(), dtype=np.float32)
+
         for actuator, act_val in zip(actuators_available, actions_np):
             try:
                 actuator(float(np.clip(act_val, 0.0, 1.0)))
@@ -65,7 +70,7 @@ class PPOMuscle(Muscle):
                 actuator(0.0)
 
         additional_data = {
-            "sampled_logits": sampled_logits.numpy(),
+            "sampled_logits": sampled_logits_np,
             "log_prob": log_prob.item(),
             "value": value.item(),
         }
