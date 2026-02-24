@@ -39,6 +39,7 @@ class PPOBrain(Brain):
         lr: float = 3e-4, gamma: float = 0.99, gae_lambda: float = 0.95,
         clip_eps: float = 0.2, ppo_epochs: int = 4,
         value_coef: float = 0.5, entropy_coef: float = 0.01,
+        min_episode_steps: int = 10,
         **kwargs,
     ) -> None:
         try:
@@ -54,6 +55,7 @@ class PPOBrain(Brain):
         self._ppo_epochs = int(ppo_epochs)
         self._value_coef = float(value_coef)
         self._entropy_coef = float(entropy_coef)
+        self._min_episode_steps = int(min_episode_steps)
 
         # Init on CPU: palaestrAI spawns Brain in a subprocess via multiprocessing,
         # which requires serialization. MPS tensors cannot cross process boundaries.
@@ -109,12 +111,31 @@ class PPOBrain(Brain):
         if not done:
             return MuscleUpdateResponse(False, None)
 
+        steps = len(self._reward_buf)
+
+        # palaestrAI sends a spurious terminal signal at the end of a multi-episode
+        # run (the SimController's else-branch fires once after restart, followed by
+        # ex_termination=True after ~1 tick).  Skip PPO update for such micro-episodes.
+        if steps < self._min_episode_steps:
+            print(
+                f"\n[PPOBrain] Skipped spurious terminal episode "
+                f"(steps={steps} < min_episode_steps={self._min_episode_steps})"
+            )
+            self._obs_buf.clear()
+            self._logits_buf.clear()
+            self._reward_buf.clear()
+            self._log_prob_buf.clear()
+            self._value_buf.clear()
+            self._done_buf.clear()
+            self._total_reward = 0.0
+            return MuscleUpdateResponse(False, None)
+
         self._episode += 1
-        avg_r = self._total_reward / max(len(self._reward_buf), 1)
+        avg_r = self._total_reward / max(steps, 1)
         print(
             f"\n[PPOBrain] Episode {self._episode}  "
-            f"steps={len(self._reward_buf)}  "
-            f"O reward={avg_r:.4f}  "
+            f"steps={steps}  "
+            f"reward={avg_r:.4f}  "
             f"total={self._total_reward:.4f}"
         )
 
