@@ -28,6 +28,14 @@ _PDL_PATH = _BASE / "scenarios" / "s1-soja.pdl.yaml"
 _OUTPUT_PATH = Path(__file__).resolve().parent / "heatmap_soja.png"
 
 
+def _alpha_type(value: str) -> float:
+    """argparse type for --alpha: must be in [0.0, 1.0]."""
+    v = float(value)
+    if not 0.0 <= v <= 1.0:
+        raise argparse.ArgumentTypeError(f"--alpha must be in [0.0, 1.0], got {v}")
+    return v
+
+
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="PROVIDER soy heatmap analysis")
     p.add_argument("--episodes", type=int, default=50)
@@ -47,7 +55,7 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--alpha",
-        type=float,
+        type=_alpha_type,
         default=0.5,
         help="Blend factor for hybrid policy: 1.0=preventive, 0.0=reactive (default: 0.5)",
     )
