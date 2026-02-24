@@ -73,7 +73,7 @@ def preventive_defender_policy(
 ) -> dict:
     """Vulnerability-weighted defense: protect structurally weak nodes pre-emptively."""
     vulns = np.array([e.vulnerability for e in entities], dtype=np.float32)
-    weights = vulns / vulns.sum() if vulns.sum() > 0 else np.ones(len(entities)) / len(entities)
+    weights = vulns / vulns.sum() if vulns.sum() > 0 else np.ones(len(entities), dtype=np.float32) / len(entities)
     return {f"defender.{e.id}": float(budget * w) for e, w in zip(entities, weights)}
 
 
