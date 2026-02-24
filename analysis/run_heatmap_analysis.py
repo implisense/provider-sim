@@ -8,6 +8,7 @@ Usage:
     python analysis/run_heatmap_analysis.py
     python analysis/run_heatmap_analysis.py --episodes 10 --ticks 100
     python analysis/run_heatmap_analysis.py --policy preventive
+    python analysis/run_heatmap_analysis.py --policy hybrid --alpha 0.75
 """
 from __future__ import annotations
 
@@ -40,9 +41,15 @@ def parse_args() -> argparse.Namespace:
                    help="Output path for heatmap PNG (default: auto-named by policy)")
     p.add_argument(
         "--policy",
-        choices=["reactive", "preventive"],
+        choices=["reactive", "preventive", "hybrid"],
         default="reactive",
-        help="Defender policy: reactive (default) or preventive (vulnerability-weighted)",
+        help="Defender policy: reactive (default), preventive (vulnerability-weighted), or hybrid",
+    )
+    p.add_argument(
+        "--alpha",
+        type=float,
+        default=0.5,
+        help="Blend factor for hybrid policy: 1.0=preventive, 0.0=reactive (default: 0.5)",
     )
     return p.parse_args()
 
@@ -85,7 +92,6 @@ def preventive_defender_policy(
     return {f"defender.{e.id}": float(budget * w) for e, w in zip(entities, weights)}
 
 
-
 def hybrid_defender_policy(
     entities: list,
     obs: dict,
@@ -115,6 +121,7 @@ def run_episodes(
     defend_budget: float,
     seed: int,
     defender_policy_name: str = "reactive",
+    alpha: float = 0.5,
 ) -> tuple:
     """Run N episodes and collect health per entity per tick.
 
@@ -139,6 +146,8 @@ def run_episodes(
             actions.update(attacker_policy(ep_env.doc.entities, obs, attack_budget))
             if defender_policy_name == "preventive":
                 actions.update(preventive_defender_policy(ep_env.doc.entities, obs, defend_budget))
+            elif defender_policy_name == "hybrid":
+                actions.update(hybrid_defender_policy(ep_env.doc.entities, obs, defend_budget, alpha=alpha))
             else:
                 actions.update(defender_policy(ep_env.doc.entities, obs, defend_budget))
 
@@ -168,7 +177,7 @@ def plot_heatmap(
     ticks: int,
     attack_budget: float,
     defend_budget: float,
-    policy: str = "reactive",
+    policy_label: str = "reactive",
 ) -> None:
     """Save health heatmap: entities (Y) x ticks (X), colour = mean health."""
     mean_health = health_data.mean(axis=0)
@@ -194,7 +203,7 @@ def plot_heatmap(
     ax.set_title(
         f"Soja-Lieferkette — Ø Health über {episodes} Episoden\n"
         f"Attacker={attack_budget:.1f}  Defender={defend_budget:.1f}  "
-        f"Policy={policy}  Ticks={ticks}",
+        f"Policy={policy_label}  Ticks={ticks}",
         fontsize=12,
     )
 
@@ -218,6 +227,7 @@ if __name__ == "__main__":
     health_data, entity_ids = run_episodes(
         args.episodes, args.ticks, args.attack, args.defend, args.seed,
         defender_policy_name=args.policy,
+        alpha=args.alpha,
     )
 
     mean_all = health_data.mean()
@@ -227,12 +237,19 @@ if __name__ == "__main__":
 
     output = args.output
     if not output:
-        stem = f"heatmap_soja_{args.policy}" if args.policy != "reactive" else "heatmap_soja"
+        if args.policy == "hybrid":
+            stem = f"heatmap_soja_hybrid_{args.alpha:.2f}"
+        elif args.policy == "preventive":
+            stem = "heatmap_soja_preventive"
+        else:
+            stem = "heatmap_soja"
         output = str(Path(__file__).resolve().parent / f"{stem}.png")
+
+    policy_label = f"hybrid(α={args.alpha:.2f})" if args.policy == "hybrid" else args.policy
 
     print("Erstelle Heatmap …")
     plot_heatmap(
         health_data, entity_ids, output,
         args.episodes, args.ticks, args.attack, args.defend,
-        policy=args.policy,
+        policy_label=policy_label,
     )
