@@ -1,6 +1,12 @@
-# CLAUDE.md — provider_sim
+# CLAUDE.md
 
-Kontextdatei fuer Claude Code. Dieses Paket ist der Python-Kern der PROVIDER-Simulation: PDL-Parser, Simulationsengine und palaestrAI-Environment.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+Dieses Paket ist der Python-Kern der PROVIDER-Simulation: PDL-Parser, Simulationsengine, palaestrAI-Environment und PPO-RL-Training.
+
+## Sprache
+
+Alle Kommunikation auf Deutsch. Code-Bezeichner, Docstrings und Kommentare bleiben Englisch.
 
 ## Sprache
 
@@ -12,20 +18,23 @@ Alle Kommunikation auf Deutsch. Code-Bezeichner, Docstrings und Kommentare bleib
 # Paket installieren (editable, mit Test-Deps)
 pip install -e ".[dev]"
 
-# Tests ausfuehren
+# Tests ausfuehren (95 Tests)
 pytest tests/ -v
 
-# Schnelltest: Soja-Szenario laden
-python -c "from provider_sim.pdl.parser import load_pdl; doc = load_pdl('/Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/pdl viewer/scenarios/s1-soja.pdl.yaml'); print(len(doc.entities))"
+# Einzelnen Test ausfuehren
+pytest tests/test_sim_engine.py::TestSimulationEngine::test_step -v
 
-# 365-Tick-Simulation (standalone, ohne palaestrAI)
-python -c "from provider_sim.sim.engine import SimulationEngine; from provider_sim.pdl.parser import load_pdl; e = SimulationEngine(load_pdl('/Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/pdl viewer/scenarios/s1-soja.pdl.yaml')); [e.step() for _ in range(365)]; print('OK')"
+# PPO-Training starten (externer Loop, fortsetzbar mit Ctrl+C)
+python experiments/train_ppo.py 50
 
-# palaestrAI-Experiment-Config generieren
-python experiments/generate_config.py <pdl_path> --output experiments/out.yaml --max-ticks 365
+# Einzelne palaestrAI-Episode (NICHT mit -vv!)
+palaestrai experiment-start experiments/soja_arl_ppo.yaml
 
-# palaestrAI-Experiment ausfuehren (NICHT mit -vv!)
+# Baseline-Experiment (DummyBrain, kein RL)
 palaestrai experiment-start experiments/soja_arl_dummy.yaml
+
+# Stale Prozesse bereinigen (nach Abbruechen noetig)
+pkill -f "palaestrai" && pkill -f "spawn_main" && pkill -f "resource_tracker"
 ```
 
 ## Architektur
@@ -44,9 +53,14 @@ provider_sim/
 │   ├── state.py       SupplyChainState, EntityState, EventState, build_state_from_pdl()
 │   └── engine.py      SimulationEngine: 5-Phasen-Step
 │
-└── env/           palaestrAI Environment ABC (optionale Dep, Stub-Fallback)
-    ├── environment.py ProviderEnvironment(Environment): start_environment/update + reset_dict/step_dict
-    └── objectives.py  AttackerObjective / DefenderObjective (reward_id-basiert)
+├── env/           palaestrAI Environment ABC (optionale Dep, Stub-Fallback)
+│   ├── environment.py ProviderEnvironment(Environment): start_environment/update + reset_dict/step_dict
+│   └── objectives.py  AttackerObjective / DefenderObjective (reward_id-basiert)
+│
+└── rl/            PPO-Agenten fuer ARL-Training
+    ├── network.py     PPONet: shared MLP (99→128→64), policy head + value head
+    ├── ppo_brain.py   PPOBrain: Trajektorie-Puffer + GAE + PPO-Update (Brain-Subprocess)
+    └── ppo_muscle.py  PPOMuscle: Inference + Budget-Constraint (Muscle-Subprocess)
 ```
 
 ### Abhaengigkeitsrichtung
@@ -200,6 +214,42 @@ palaestrai experiment-start experiments/soja_arl_dummy.yaml
 - **Laufzeit**: Soja-Szenario mit 365 Ticks und DummyBrain dauert ca. 3 Minuten (~0.57s/Tick).
 - **Kein Mid-Episode-Resume**: Abgebrochene Episoden starten von vorn. Nur abgeschlossene Episoden bleiben in der DB.
 - **Ergebnis-DB**: `palaestrai.db` enthaelt `world_states` (Sensor-Dumps als JSON in `state_dump`), `muscle_actions`, `brain_states` etc.
+
+## RL-Training (PPO)
+
+### Architektur
+
+`PPONet` ist ein geteiltes Actor-Critic-MLP. `PPOMuscle` laeuft als palaestrAI-Muscle-Subprocess und macht Inference. `PPOBrain` laeuft als separater Brain-Subprocess, puffert eine Episode und fuehrt dann PPO-Update durch.
+
+**Warum Brain=MPS (lazy), Muscle=CPU (immer):**
+Muscle-Tensors muessen ueber `aiomultiprocess`-Prozessgrenzen via Shared Memory. MPS-Tensors koennen das nicht. Brain initialisiert das Netz auf CPU (sicheres Pickling beim Spawn), verschiebt es lazy per `_ensure_on_device()` erst beim ersten PPO-Update nach dem Spawn.
+
+### palaestrAI-Eigenheiten (kritisch)
+
+- `episodes: N` liefert **nur 1 echte Trainings-Episode** + (N-1) spurious (2 Steps je). Ursache: `VanillaSimController` sendet `ex_termination=True` sofort nach Restart. Fix: `min_episode_steps=10` in PPOBrain ueberspringt Micro-Episoden.
+- `store_model(path)` wird bei **jedem Tick** aufgerufen, nicht nur am Episode-Ende.
+- `propose_actions()` Sensoren: erste Sensor-Daten koennen plain floats sein → `hasattr(s, 'sensor_value')` Guard noetig.
+- Aktuator-Setpoint muss `np.array([float], dtype=np.float32)` sein, kein plain float.
+- **Ports 4242/4243**: ZMQ-Broker. Nach Abbruechen immer `pkill -f palaestrai && pkill -f spawn_main` ausfuehren.
+
+### Externer Trainings-Loop
+
+Da palaestrAI kein echtes Multi-Episode-Training unterstuetzt, laeuft jede Episode als separater `palaestrai experiment-start`-Prozess:
+
+```bash
+python experiments/train_ppo.py 50   # 50 echte Trainings-Episoden
+python experiments/train_ppo.py 50   # setzt automatisch fort (liest progress.json)
+```
+
+`experiments/checkpoints/progress.json` speichert den Fortschritt — Training ist mit Ctrl+C unterbrechbar und mit demselben Befehl fortsetzbar. Checkpoints: `checkpoints/attacker.pt` und `checkpoints/defender.pt` (werden nach jeder Episode ueberschrieben).
+
+**Zum Neustart:** `rm experiments/checkpoints/*.pt experiments/checkpoints/progress.json`
+
+### Soja-Szenario: Dimensionen
+
+- 99 Sensoren (20 Entities × 4 + 18 Events + 1 Tick), 20 Aktuatoren pro Agent
+- Attacker-Budget: 0.8, Defender-Budget: 0.4 (Softmax-normiert)
+- Reward zero-sum: `attacker + defender = 1.0` immer
 
 ## Tests (95 Tests)
 
