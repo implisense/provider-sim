@@ -9,6 +9,8 @@ from torch.distributions import Normal
 
 from provider_sim.rl.network import PPONet
 
+_DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+
 try:
     from palaestrai.agent.brain import Brain
     from palaestrai.core.protocol.muscle_update_rsp import MuscleUpdateResponse
@@ -53,7 +55,7 @@ class PPOBrain(Brain):
         self._value_coef = float(value_coef)
         self._entropy_coef = float(entropy_coef)
 
-        self._net = PPONet(n_obs=self._n_obs, n_act=self._n_act)
+        self._net = PPONet(n_obs=self._n_obs, n_act=self._n_act).to(_DEVICE)
         self._optimizer = torch.optim.Adam(self._net.parameters(), lr=self._lr)
 
         self._obs_buf: list = []
@@ -126,7 +128,7 @@ class PPOBrain(Brain):
         torch.save(self._net.state_dict(), path)
 
     def load_model(self, path: str) -> None:
-        self._net.load_state_dict(torch.load(path, weights_only=True))
+        self._net.load_state_dict(torch.load(path, map_location=_DEVICE, weights_only=True))
 
     # ------------------------------------------------------------------
     # PPO helpers
@@ -163,10 +165,12 @@ class PPOBrain(Brain):
 
     def _ppo_update(self, next_value: float) -> dict:
         """Run PPO update on accumulated trajectory. Returns new state_dict."""
-        obs_t = torch.tensor(np.stack(self._obs_buf).tolist(), dtype=torch.float32)
-        logits_t = torch.tensor(np.stack(self._logits_buf).tolist(), dtype=torch.float32)
-        old_log_prob_t = torch.tensor(self._log_prob_buf, dtype=torch.float32)
+        obs_t = torch.tensor(np.stack(self._obs_buf).tolist(), dtype=torch.float32).to(_DEVICE)
+        logits_t = torch.tensor(np.stack(self._logits_buf).tolist(), dtype=torch.float32).to(_DEVICE)
+        old_log_prob_t = torch.tensor(self._log_prob_buf, dtype=torch.float32).to(_DEVICE)
         advantages, returns = self._compute_gae(next_value)
+        advantages = advantages.to(_DEVICE)
+        returns = returns.to(_DEVICE)
 
         self._net.train()
         actor_loss = critic_loss = entropy = torch.tensor(0.0)

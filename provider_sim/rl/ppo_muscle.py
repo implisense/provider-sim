@@ -14,6 +14,8 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             pass
 
+_DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+
 
 class PPOMuscle(Muscle):
     """PPO Muscle for palaestrAI.
@@ -35,8 +37,8 @@ class PPOMuscle(Muscle):
         self._net: PPONet | None = None
 
     def setup(self) -> None:
-        self._net = PPONet(n_obs=self._n_obs, n_act=self._n_act)
-        self._net.eval()
+        self._net = PPONet(n_obs=self._n_obs, n_act=self._n_act).to(_DEVICE)
+        self._net.eval()  # inference mode
 
     def propose_actions(self, sensors, actuators_available, is_terminal: bool = False):
         """Propose budget-constrained actions via PPO policy.
@@ -55,7 +57,7 @@ class PPOMuscle(Muscle):
                 obs_list.extend(float(v) for v in np.asarray(val).flatten())
             else:
                 obs_list.append(float(val))
-        obs = torch.tensor(obs_list, dtype=torch.float32)
+        obs = torch.tensor(obs_list, dtype=torch.float32).to(_DEVICE)
 
         with torch.no_grad():
             actions_t, sampled_logits, log_prob, value = self._net.sample_action(obs, self._budget)
