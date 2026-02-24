@@ -229,8 +229,12 @@ def plot_heatmap(
 
 if __name__ == "__main__":
     args = parse_args()
+    if args.alpha != 0.5 and args.policy != "hybrid":
+        print(f"  Hinweis: --alpha={args.alpha} wird bei Policy '{args.policy}' ignoriert.")
+
     print(f"Starte {args.episodes} Episoden × {args.ticks} Ticks …")
-    print(f"  Attack={args.attack}  Defend={args.defend}  Seed={args.seed}  Policy={args.policy}")
+    policy_info = f"hybrid(α={args.alpha:.2f})" if args.policy == "hybrid" else args.policy
+    print(f"  Attack={args.attack}  Defend={args.defend}  Seed={args.seed}  Policy={policy_info}")
 
     health_data, entity_ids = run_episodes(
         args.episodes, args.ticks, args.attack, args.defend, args.seed,
