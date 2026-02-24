@@ -145,6 +145,7 @@ def plot_heatmap(
     ticks: int,
     attack_budget: float,
     defend_budget: float,
+    policy: str = "reactive",
 ) -> None:
     """Save health heatmap: entities (Y) x ticks (X), colour = mean health."""
     mean_health = health_data.mean(axis=0)
@@ -170,7 +171,7 @@ def plot_heatmap(
     ax.set_title(
         f"Soja-Lieferkette — Ø Health über {episodes} Episoden\n"
         f"Attacker={attack_budget:.1f}  Defender={defend_budget:.1f}  "
-        f"Ticks={ticks}",
+        f"Policy={policy}  Ticks={ticks}",
         fontsize=12,
     )
 
@@ -210,4 +211,5 @@ if __name__ == "__main__":
     plot_heatmap(
         health_data, entity_ids, output,
         args.episodes, args.ticks, args.attack, args.defend,
+        policy=args.policy,
     )
