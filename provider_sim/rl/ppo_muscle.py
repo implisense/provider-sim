@@ -14,7 +14,10 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             pass
 
-_DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+# Muscle always runs on CPU: palaestrAI passes actuator/sensor data through
+# inter-process boundaries (shared memory), and MPS tensors cannot cross them.
+# Inference on this small network is negligible on CPU.
+_DEVICE = torch.device("cpu")
 
 
 class PPOMuscle(Muscle):
@@ -66,10 +69,9 @@ class PPOMuscle(Muscle):
         sampled_logits_np = np.array(sampled_logits.tolist(), dtype=np.float32)
 
         for actuator, act_val in zip(actuators_available, actions_np):
-            try:
-                actuator(float(np.clip(act_val, 0.0, 1.0)))
-            except Exception:
-                actuator(0.0)
+            # palaestrAI Box(shape=(1,)) requires a numpy array, not a plain float
+            setpoint = np.array([float(np.clip(act_val, 0.0, 1.0))], dtype=np.float32)
+            actuator(setpoint)
 
         additional_data = {
             "sampled_logits": sampled_logits_np,

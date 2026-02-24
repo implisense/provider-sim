@@ -55,8 +55,12 @@ class PPOBrain(Brain):
         self._value_coef = float(value_coef)
         self._entropy_coef = float(entropy_coef)
 
-        self._net = PPONet(n_obs=self._n_obs, n_act=self._n_act).to(_DEVICE)
+        # Init on CPU: palaestrAI spawns Brain in a subprocess via multiprocessing,
+        # which requires serialization. MPS tensors cannot cross process boundaries.
+        # _ensure_on_device() moves to MPS lazily before the first PPO update.
+        self._net = PPONet(n_obs=self._n_obs, n_act=self._n_act)
         self._optimizer = torch.optim.Adam(self._net.parameters(), lr=self._lr)
+        self._on_device = False
 
         self._obs_buf: list = []
         self._logits_buf: list = []
@@ -89,6 +93,8 @@ class PPOBrain(Brain):
 
         self._total_reward += r
         obs = self._extract_obs(readings)
+        if not isinstance(additional_data, dict):
+            additional_data = {}
         sampled_logits = additional_data.get("sampled_logits", np.zeros(self._n_act))
         log_prob = float(additional_data.get("log_prob", 0.0))
         value = float(additional_data.get("value", 0.0))
@@ -125,6 +131,8 @@ class PPOBrain(Brain):
         return MuscleUpdateResponse(True, state_dict)
 
     def store_model(self, path: str) -> None:
+        import os
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         torch.save(self._net.state_dict(), path)
 
     def load_model(self, path: str) -> None:
@@ -134,9 +142,22 @@ class PPOBrain(Brain):
     # PPO helpers
     # ------------------------------------------------------------------
 
+    def _ensure_on_device(self) -> None:
+        """Move net + optimizer to _DEVICE on first call (after subprocess spawn)."""
+        if not self._on_device:
+            self._net = self._net.to(_DEVICE)
+            self._optimizer = torch.optim.Adam(self._net.parameters(), lr=self._lr)
+            self._on_device = True
+
     def _extract_obs(self, sensors) -> np.ndarray:
+        if sensors is None:
+            return np.zeros(self._n_obs, dtype=np.float32)
         obs_list = []
         for s in sensors:
+            if not hasattr(s, "sensor_value"):
+                # plain float/number passed directly
+                obs_list.append(float(s))
+                continue
             val = s.sensor_value
             if hasattr(val, "__iter__"):
                 obs_list.extend(float(v) for v in np.asarray(val).flatten())
@@ -165,6 +186,7 @@ class PPOBrain(Brain):
 
     def _ppo_update(self, next_value: float) -> dict:
         """Run PPO update on accumulated trajectory. Returns new state_dict."""
+        self._ensure_on_device()
         obs_t = torch.tensor(np.stack(self._obs_buf).tolist(), dtype=torch.float32).to(_DEVICE)
         logits_t = torch.tensor(np.stack(self._logits_buf).tolist(), dtype=torch.float32).to(_DEVICE)
         old_log_prob_t = torch.tensor(self._log_prob_buf, dtype=torch.float32).to(_DEVICE)

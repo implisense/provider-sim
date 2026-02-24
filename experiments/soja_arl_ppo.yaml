@@ -199,7 +199,7 @@ schedule:
         name: provider_sim.env.environment:ProviderEnvironment
         params:
           max_ticks: 365
-          pdl_source: /Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/pdl viewer/scenarios/s1-soja.pdl.yaml
+          pdl_source: /Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/palestrai_simulation/scenarios/s1-soja.pdl.yaml
         uid: provider_env
       reward:
         name: palaestrai.agent.dummy_objective:DummyObjective
