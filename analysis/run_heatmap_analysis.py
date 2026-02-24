@@ -66,6 +66,17 @@ def defender_policy(
     return {f"defender.{e.id}": float(budget * w) for e, w in zip(entities, weights)}
 
 
+def preventive_defender_policy(
+    entities: list,
+    obs: dict,
+    budget: float,
+) -> dict:
+    """Vulnerability-weighted defense: protect structurally weak nodes pre-emptively."""
+    vulns = np.array([e.vulnerability for e in entities], dtype=np.float32)
+    weights = vulns / vulns.sum() if vulns.sum() > 0 else np.ones(len(entities)) / len(entities)
+    return {f"defender.{e.id}": float(budget * w) for e, w in zip(entities, weights)}
+
+
 def run_episodes(
     episodes: int,
     ticks: int,
