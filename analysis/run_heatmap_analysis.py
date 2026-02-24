@@ -7,6 +7,7 @@ Usage:
     cd palestrai_simulation
     python analysis/run_heatmap_analysis.py
     python analysis/run_heatmap_analysis.py --episodes 10 --ticks 100
+    python analysis/run_heatmap_analysis.py --policy preventive
 """
 from __future__ import annotations
 
@@ -35,7 +36,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--defend",   type=float, default=0.4,
                    help="Max defend budget (0-1)")
     p.add_argument("--seed",     type=int, default=42)
-    p.add_argument("--output",   type=str, default=str(_OUTPUT_PATH))
+    p.add_argument("--output",   type=str, default="",
+                   help="Output path for heatmap PNG (default: auto-named by policy)")
+    p.add_argument(
+        "--policy",
+        choices=["reactive", "preventive"],
+        default="reactive",
+        help="Defender policy: reactive (default) or preventive (vulnerability-weighted)",
+    )
     return p.parse_args()
 
 
@@ -83,6 +91,7 @@ def run_episodes(
     attack_budget: float,
     defend_budget: float,
     seed: int,
+    defender_policy_name: str = "reactive",
 ) -> tuple:
     """Run N episodes and collect health per entity per tick.
 
@@ -105,7 +114,10 @@ def run_episodes(
         for tick in range(ticks):
             actions = {}
             actions.update(attacker_policy(ep_env.doc.entities, obs, attack_budget))
-            actions.update(defender_policy(ep_env.doc.entities, obs, defend_budget))
+            if defender_policy_name == "preventive":
+                actions.update(preventive_defender_policy(ep_env.doc.entities, obs, defend_budget))
+            else:
+                actions.update(defender_policy(ep_env.doc.entities, obs, defend_budget))
 
             obs, rewards, done = ep_env.step_dict(actions)
 
@@ -177,10 +189,11 @@ def plot_heatmap(
 if __name__ == "__main__":
     args = parse_args()
     print(f"Starte {args.episodes} Episoden × {args.ticks} Ticks …")
-    print(f"  Attack={args.attack}  Defend={args.defend}  Seed={args.seed}")
+    print(f"  Attack={args.attack}  Defend={args.defend}  Seed={args.seed}  Policy={args.policy}")
 
     health_data, entity_ids = run_episodes(
-        args.episodes, args.ticks, args.attack, args.defend, args.seed
+        args.episodes, args.ticks, args.attack, args.defend, args.seed,
+        defender_policy_name=args.policy,
     )
 
     mean_all = health_data.mean()
@@ -188,8 +201,13 @@ if __name__ == "__main__":
     print(f"  Ø Health gesamt     : {mean_all:.4f}")
     print(f"  Kritischste Entity  : {min_entity}")
 
+    output = args.output
+    if not output:
+        stem = f"heatmap_soja_{args.policy}" if args.policy != "reactive" else "heatmap_soja"
+        output = str(Path(__file__).resolve().parent / f"{stem}.png")
+
     print("Erstelle Heatmap …")
     plot_heatmap(
-        health_data, entity_ids, args.output,
+        health_data, entity_ids, output,
         args.episodes, args.ticks, args.attack, args.defend,
     )
