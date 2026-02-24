@@ -206,7 +206,7 @@ schedule:
         params:
           params: {}
     phase_config:
-      episodes: 51
+      episodes: 4
       mode: train
       worker: 1
     simulation:
