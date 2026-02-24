@@ -57,6 +57,9 @@ action_i = budget × weight_i
 | Ausgeglichen | 0.6 | 0.6 | **0.7314** | `feed_mills` | `heatmap_balanced.png` |
 | Defender dominiert | 0.4 | 0.8 | **0.7377** | `feed_mills` | `heatmap_defender_wins.png` |
 | Präventiv (Attack 0.8) | 0.8 | 0.4 | **0.6954** | `gas_supply` | `heatmap_soja_preventive.png` |
+| Hybrid α=0.25 | 0.8 | 0.4 | **0.6986** | `feed_mills` | `heatmap_soja_hybrid_0.25.png` |
+| Hybrid α=0.50 | 0.8 | 0.4 | **0.6964** | `feed_mills` | `heatmap_soja_hybrid_0.50.png` |
+| Hybrid α=0.75 | 0.8 | 0.4 | **0.6958** | `gas_supply` | `heatmap_soja_hybrid_0.75.png` |
 
 ### Lauf 1: Attacker dominiert (Attack 0.8 / Defend 0.4)
 
@@ -82,6 +85,14 @@ action_i = budget × weight_i
 
 Ø Health: **0.6954** — identische Budget-Parameter wie Lauf 1 (reaktiv), aber vulnerability-gewichteter Defender. Das Ergebnis ist überraschend: die präventive Policy schneidet marginal schlechter ab als die reaktive (−0,0045 pp). Bei einem starken Angreifer (0.8) verteilt die präventive Policy das Budget breit auf alle strukturell vulnerablen Nodes — darunter `gas_supply` (Vulnerability 0.70), das jetzt als kritischste Entity erscheint statt `feed_mills`. Die reaktive Policy konzentriert dagegen ihre Ressourcen dort, wo gerade tatsächlich Schaden entsteht, und ist dadurch effizienter. Dieses Ergebnis deutet auf eine Kontextabhängigkeit hin: präventive Verteidigung könnte bei einem schwächeren Angreifer oder als Früh-Taktik in den ersten Ticks vorteilhafter sein.
 
+### Läufe 5–7: Hybrid-Policy (α=0.25 / 0.50 / 0.75, Attack 0.8 / Defend 0.4)
+
+![Hybrid α=0.25](heatmap_soja_hybrid_0.25.png)
+![Hybrid α=0.50](heatmap_soja_hybrid_0.50.png)
+![Hybrid α=0.75](heatmap_soja_hybrid_0.75.png)
+
+Ø Health: α=0.25 → **0.6986**, α=0.50 → **0.6964**, α=0.75 → **0.6958**. Alle drei Werte liegen zwischen den Referenzwerten reaktiv (0.6999) und präventiv (0.6954), mit monotonem Abfall bei steigendem α. Kein Hybrid-Wert übertrifft die rein reaktive Policy. Bei α=0.75 wechselt die kritischste Entity von `feed_mills` zu `gas_supply` — der erhöhte Präventivschutz entlastet `feed_mills`, verschiebt aber den Engpass. Das Ergebnis bestätigt: Bei starkem Angreifer (0.8) und knappem Defender-Budget (0.4) ist reaktive Verteidigung effizienter als jede Mischung mit Prävention.
+
 ---
 
 ## 4. Übergreifende Befunde
@@ -97,6 +108,9 @@ Der Sprung von Lauf 1 zu Lauf 2 (Attack/Defend-Parität) bewirkt +3,1 pp Health,
 
 **Präventiv vs. reaktiv — kontextabhängige Effizienz:**
 Bei starkem Angreifer (0.8) ist die reaktive Policy marginal überlegen (0.6999 vs. 0.6954). Die präventive Policy verschiebt den Bottleneck: `feed_mills` wird durch gezielten Schutz entlastet, während `gas_supply` als neue kritischste Entity sichtbar wird. Dies legt nahe, dass ein hybrider Ansatz — präventiv für strukturelle Schlüssel-Nodes, reaktiv für akute Krisen — optimal wäre.
+
+**α-Sweep: monotoner Abfall ohne optimales Plateau:**
+Der Hybrid-α-Sweep (α=0.25 / 0.50 / 0.75) zeigt einen monoton fallenden Health-Trend: 0.6986 → 0.6964 → 0.6958. Es gibt kein optimales α > 0 das die reaktive Baseline (0.6999) übertrifft. Die lineare Interpolation zwischen den Polen erzeugt keinen Synergieeffekt. Hypothese: Der Vorteil reaktiver Verteidigung liegt in der Konzentration auf aktive Schadensknoten — Prävention verdünnt diesen Fokus proportional zu α.
 
 ---
 
