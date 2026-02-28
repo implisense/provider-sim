@@ -28,11 +28,14 @@ logger = logging.getLogger(__name__)
 
 def load_embeddings_from_db(db_path: str) -> tuple:
     """Lädt alle IDs und Embeddings aus der gap-explorer SQLite-DB."""
-    conn = sqlite3.connect(db_path)
-    rows = conn.execute(
-        "SELECT id, embedding FROM scenarios ORDER BY created_at"
-    ).fetchall()
-    conn.close()
+    try:
+        with sqlite3.connect(db_path) as conn:
+            rows = conn.execute(
+                "SELECT id, embedding FROM scenarios ORDER BY created_at"
+            ).fetchall()
+    except sqlite3.OperationalError as exc:
+        logger.error("DB nicht lesbar: %s -- %s", db_path, exc)
+        return [], np.array([])
     if not rows:
         return [], np.array([])
     ids = [r[0] for r in rows]
@@ -70,7 +73,15 @@ def generate_dummy_losses(db_path: str, output_path: str) -> dict:
     ids, embeddings = load_embeddings_from_db(db_path)
     if not ids:
         logger.warning("Keine Szenarien in DB: %s", db_path)
-        report = {"timestamp": datetime.now().isoformat(), "scenario_losses": {}}
+        report = {
+            "timestamp": datetime.now().isoformat(),
+            "scenario_losses": {},
+            "meta": {
+                "source": "dummy_embedding_density",
+                "n_scenarios": 0,
+                "db_path": db_path,
+            },
+        }
     else:
         losses = compute_dummy_losses(ids, embeddings)
         report = {
