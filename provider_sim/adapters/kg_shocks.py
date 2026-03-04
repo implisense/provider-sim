@@ -1,4 +1,31 @@
-"""Adapter: KG-Schocks (JSON dict) → PDL-Events für palestrai_simulation."""
+"""Adapter: KG-Schocks (JSON dict) → PDL-Events für palestrai_simulation.
+
+Typischer Workflow::
+
+    # 1. KG-Schocks abrufen (coypu-kg-analyser CLI)
+    import json, subprocess
+    raw = subprocess.run(
+        ["python", "-m", "coypu_kg_analyser", "parametrize-s1"],
+        capture_output=True, text=True,
+    )
+    shocks = json.loads(raw.stdout)["shocks"]
+
+    # 2. PDL-Dokument laden und Schocks injizieren
+    from provider_sim.pdl.parser import load_pdl
+    from provider_sim.adapters.kg_shocks import apply_kg_shocks, S1_KG_TO_PDL
+
+    doc = load_pdl("scenarios/s1-soja.pdl.yaml")
+    parametrized_doc = apply_kg_shocks(doc, shocks, id_mapping=S1_KG_TO_PDL)
+
+    # 3. Simulation starten
+    from provider_sim.sim.engine import SimulationEngine
+    engine = SimulationEngine(parametrized_doc, seed=42)
+    for _ in range(365):
+        engine.step()
+
+Nicht gemappte target_ids (z.B. 'deu_soy_farm', 'rosario_port') werden
+stillschweigend übersprungen. magnitude == 1.0 erzeugt kein Event.
+"""
 from __future__ import annotations
 
 from copy import deepcopy
