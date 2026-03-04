@@ -1,12 +1,15 @@
 """Adapter: KG-Schocks (JSON dict) → PDL-Events für palestrai_simulation."""
 from __future__ import annotations
 
+from copy import deepcopy
+
 from provider_sim.pdl.model import (
     Duration,
     Event,
     EventType,
     Impact,
     Percentage,
+    PdlDocument,
     Trigger,
 )
 
@@ -81,11 +84,6 @@ def kg_shocks_to_events(
         ))
 
     return events
-
-
-from copy import deepcopy
-
-from provider_sim.pdl.model import PdlDocument
 
 
 def apply_kg_shocks(
