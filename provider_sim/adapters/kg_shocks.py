@@ -81,3 +81,30 @@ def kg_shocks_to_events(
         ))
 
     return events
+
+
+from copy import deepcopy
+
+from provider_sim.pdl.model import PdlDocument
+
+
+def apply_kg_shocks(
+    doc: PdlDocument,
+    shocks: list[dict],
+    id_mapping: dict[str, str] | None = None,
+    duration_days: int = 365,
+    reference: str = "CoyPu KG Live-Abfrage",
+) -> PdlDocument:
+    """Gibt eine Kopie von doc zurück, in der KG-Schocks als Events vorne stehen.
+
+    Das Originaldokument wird nicht verändert.
+    """
+    kg_events = kg_shocks_to_events(
+        shocks,
+        id_mapping=id_mapping,
+        duration_days=duration_days,
+        reference=reference,
+    )
+    new_doc = deepcopy(doc)
+    new_doc.events = kg_events + new_doc.events
+    return new_doc

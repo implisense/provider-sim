@@ -90,3 +90,48 @@ def test_custom_duration():
     shocks = [{"target_id": "bra_soy_farm", "shock_type": "capacity", "magnitude": 0.7}]
     events = kg_shocks_to_events(shocks, id_mapping=S1_KG_TO_PDL, duration_days=90)
     assert events[0].impact.duration.days == 90
+
+
+# --- apply_kg_shocks Tests ---
+
+from provider_sim.adapters.kg_shocks import apply_kg_shocks
+
+SOJA_PDL = "/Users/aschaefer/Projekte/Forschung/PROVIDER/06_Szenarien/scenarios/s1-soja.pdl.yaml"
+
+
+@pytest.fixture
+def soja_doc():
+    from provider_sim.pdl.parser import load_pdl
+    return load_pdl(SOJA_PDL)
+
+
+def test_apply_kg_shocks_prepends_events(soja_doc):
+    """KG-Events werden vor die bestehenden PDL-Events eingefügt."""
+    original_event_count = len(soja_doc.events)
+    shocks = [{"target_id": "bra_soy_farm", "shock_type": "capacity", "magnitude": 0.6}]
+    new_doc = apply_kg_shocks(soja_doc, shocks, id_mapping=S1_KG_TO_PDL)
+    assert len(new_doc.events) == original_event_count + 1
+    assert new_doc.events[0].id == "kg_shock_brazil_farms"
+
+
+def test_apply_kg_shocks_does_not_mutate_original(soja_doc):
+    """Originaldokument wird nicht verändert (deepcopy)."""
+    original_count = len(soja_doc.events)
+    shocks = [{"target_id": "bra_soy_farm", "shock_type": "capacity", "magnitude": 0.6}]
+    apply_kg_shocks(soja_doc, shocks, id_mapping=S1_KG_TO_PDL)
+    assert len(soja_doc.events) == original_count
+
+
+def test_apply_kg_shocks_engine_runs(soja_doc):
+    """SimulationEngine läuft 5 Ticks mit KG-injizierten Events ohne Fehler."""
+    from provider_sim.sim.engine import SimulationEngine
+    shocks = [
+        {"target_id": "bra_soy_farm",     "shock_type": "capacity", "magnitude": 0.6},
+        {"target_id": "fertilizer_input", "shock_type": "price",    "magnitude": 1.5},
+    ]
+    new_doc = apply_kg_shocks(soja_doc, shocks, id_mapping=S1_KG_TO_PDL)
+    engine = SimulationEngine(new_doc, seed=42)
+    for _ in range(5):
+        engine.step()
+    assert engine.state.tick == 5
+    assert engine.state.entities["brazil_farms"].supply < 1.0
