@@ -19,8 +19,8 @@ from provider_sim.env.environment import (
 class TestProviderEnvironment:
     def test_sensor_count(self, soja_doc):
         env = ProviderEnvironment(soja_doc)
-        # 20 entities * 4 + 18 events + 1 tick = 99
-        assert len(env.sensor_names) == 99
+        # 20 entities * 4 + 55 events + 1 tick = 136
+        assert len(env.sensor_names) == 136
 
     def test_actuator_count(self, soja_doc):
         env = ProviderEnvironment(soja_doc)
@@ -29,7 +29,7 @@ class TestProviderEnvironment:
 
     def test_load_from_path(self, soja_path):
         env = ProviderEnvironment(str(soja_path))
-        assert len(env.sensor_names) == 99
+        assert len(env.sensor_names) == 136
 
 
 class TestPalaestrAIProtocol:
@@ -39,7 +39,7 @@ class TestPalaestrAIProtocol:
         env = ProviderEnvironment(soja_doc, seed=42)
         baseline = env.start_environment()
         assert isinstance(baseline, EnvironmentBaseline)
-        assert len(baseline.sensors_available) == 99
+        assert len(baseline.sensors_available) == 136
         assert len(baseline.actuators_available) == 40
         assert baseline.simtime.simtime_ticks == 0
 
@@ -81,7 +81,7 @@ class TestPalaestrAIProtocol:
         ]
         state = env.update(actuators)
         assert isinstance(state, EnvironmentState)
-        assert len(state.sensor_information) == 99
+        assert len(state.sensor_information) == 136
         assert len(state.rewards) == 2
         assert isinstance(state.done, bool)
         assert state.simtime.simtime_ticks == 1
@@ -199,7 +199,7 @@ class TestUidPrepending:
             a.actuator_id = a.actuator_id.removeprefix("test_uid.")
         # update() should work with bare IDs
         state = env.update(baseline.actuators_available)
-        assert len(state.sensor_information) == 99
+        assert len(state.sensor_information) == 136
 
     def test_config_generator_uid_matches(self, soja_path):
         """Config generator must use same uid as environment section."""

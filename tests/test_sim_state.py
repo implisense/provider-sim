@@ -13,8 +13,8 @@ class TestStateInit:
 
     def test_event_count(self, soja_doc):
         state = build_state_from_pdl(soja_doc)
-        assert len(state.event_ids) == 18
-        assert len(state.events) == 18
+        assert len(state.event_ids) == 55
+        assert len(state.events) == 55
 
     def test_initial_supply(self, soja_doc):
         state = build_state_from_pdl(soja_doc)

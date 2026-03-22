@@ -77,7 +77,7 @@ class TestLoadSoja:
         assert len(soja_doc.entities) == 20
 
     def test_event_count(self, soja_doc):
-        assert len(soja_doc.events) == 18
+        assert len(soja_doc.events) == 55
 
     def test_scenario_metadata(self, soja_doc):
         assert soja_doc.scenario.id == "soy_feed_disruption"
