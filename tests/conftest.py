@@ -9,8 +9,8 @@ import pytest
 from provider_sim.pdl.parser import load_pdl
 from provider_sim.sim.engine import SimulationEngine
 
-SCENARIOS_DIR = Path(
-    "/Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/pdl-viewer/scenarios"
+SCENARIOS_DIR = (
+    Path(__file__).parent.parent.parent.parent / "06_Szenarien" / "scenarios"
 )
 
 SOJA_PATH = SCENARIOS_DIR / "s1-soja.pdl.yaml"
