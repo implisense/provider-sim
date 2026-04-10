@@ -174,3 +174,63 @@ class TestEnvironmentFlags:
         env = ProviderEnvironment(pdl_source=p, seed=0)
         assert env.engine._use_baci_capacity is False
         assert env.engine._use_icio_weights is False
+
+
+# ---------------------------------------------------------------------------
+# Task 4 — Follow-up params: baci_capacity_scale + icio_norm
+# ---------------------------------------------------------------------------
+
+
+class TestFollowupParams:
+    @staticmethod
+    def _icio_path():
+        import pathlib
+        base = pathlib.Path(__file__).parent.parent
+        p = base / "experiments" / "configs" / "s1-soja_icio.pdl.yaml"
+        if not p.exists():
+            pytest.skip("s1-soja_icio.pdl.yaml nicht gefunden")
+        return str(p)
+
+    def test_baci_scale_relaxes_cap(self):
+        from provider_sim.pdl.parser import load_pdl
+        doc = load_pdl(self._icio_path())
+        eng1 = SimulationEngine(doc, seed=0, use_baci_capacity=True, baci_capacity_scale=1.0)
+        eng2 = SimulationEngine(doc, seed=0, use_baci_capacity=True, baci_capacity_scale=2.0)
+        actions = {"argentina_farms": 2.0}
+        eng1.step(defender_actions=actions)
+        eng2.step(defender_actions=actions)
+        # Mit scale=2.0 darf supply höher sein als mit scale=1.0
+        assert eng2.state.entities["argentina_farms"].supply >= \
+               eng1.state.entities["argentina_farms"].supply - 1e-6
+
+    def test_icio_norm_uniform_equals_unweighted(self):
+        from provider_sim.pdl.parser import load_pdl
+        doc = load_pdl(self._icio_path())
+        # uniform-Gewichte sollten dasselbe wie kein ICIO-Flag ergeben
+        eng_uniform = SimulationEngine(doc, seed=42, use_icio_weights=True, icio_norm="uniform")
+        eng_none    = SimulationEngine(doc, seed=42, use_icio_weights=False)
+        for _ in range(5):
+            eng_uniform.step()
+            eng_none.step()
+        for eid in eng_uniform.state.entity_ids:
+            s_u = eng_uniform.state.entities[eid].supply
+            s_n = eng_none.state.entities[eid].supply
+            assert abs(s_u - s_n) < 1e-6, f"{eid}: uniform={s_u:.4f} vs none={s_n:.4f}"
+
+    def test_icio_norm_sqrt_no_crash(self):
+        from provider_sim.pdl.parser import load_pdl
+        doc = load_pdl(self._icio_path())
+        eng = SimulationEngine(doc, seed=0, use_icio_weights=True, icio_norm="sqrt")
+        for _ in range(10):
+            eng.step()
+        for eid in eng.state.entity_ids:
+            assert eng.state.entities[eid].supply >= 0.0
+
+    def test_icio_norm_softmax_no_crash(self):
+        from provider_sim.pdl.parser import load_pdl
+        doc = load_pdl(self._icio_path())
+        eng = SimulationEngine(doc, seed=0, use_icio_weights=True, icio_norm="softmax")
+        for _ in range(10):
+            eng.step()
+        for eid in eng.state.entity_ids:
+            assert eng.state.entities[eid].supply >= 0.0

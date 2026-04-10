@@ -193,6 +193,8 @@ class ProviderEnvironment(_BaseEnv):
         broker_uri: str = "",
         use_baci_capacity: bool = False,
         use_icio_weights: bool = False,
+        baci_capacity_scale: float = 1.0,
+        icio_norm: str = "linear",
         **kwargs: Any,
     ) -> None:
         if _HAS_PALAESTRAI:
@@ -213,6 +215,8 @@ class ProviderEnvironment(_BaseEnv):
             max_ticks=max_ticks,
             use_baci_capacity=use_baci_capacity,
             use_icio_weights=use_icio_weights,
+            baci_capacity_scale=baci_capacity_scale,
+            icio_norm=icio_norm,
         )
 
         # Pre-build space descriptors (id → Space)
