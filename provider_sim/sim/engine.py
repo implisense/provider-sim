@@ -23,10 +23,14 @@ class SimulationEngine:
         doc: PdlDocument,
         seed: int | None = None,
         max_ticks: int = 365,
+        use_baci_capacity: bool = False,
+        use_icio_weights: bool = False,
     ) -> None:
         self.doc = doc
         self._seed = seed
         self._max_ticks = max_ticks
+        self._use_baci_capacity = use_baci_capacity
+        self._use_icio_weights = use_icio_weights
         self.state = build_state_from_pdl(doc, seed=seed, max_ticks=max_ticks)
 
         # Pre-parse condition ASTs
@@ -232,9 +236,17 @@ class SimulationEngine:
             ups = s.upstream.get(eid, set())
 
             if ups:
-                incoming = [s.entities[u].supply for u in ups if u in s.entities]
+                upstream_ids = [u for u in ups if u in s.entities]
+                incoming = [s.entities[u].supply for u in upstream_ids]
                 if incoming:
-                    mean_incoming = sum(incoming) / len(incoming)
+                    if self._use_icio_weights:
+                        weights = [s.icio_weight.get(u, 1.0) for u in upstream_ids]
+                        total_w = sum(weights)
+                        mean_incoming = sum(
+                            sup * w for sup, w in zip(incoming, weights)
+                        ) / total_w
+                    else:
+                        mean_incoming = sum(incoming) / len(incoming)
                     es.supply = min(es.supply, mean_incoming)
 
             # Dependency penalty
@@ -244,6 +256,10 @@ class SimulationEngine:
                 if dep_es and dep_es.supply < 0.5:
                     penalty = 0.3 * (1.0 - dep_es.supply)
                     es.supply = max(0.0, es.supply - penalty)
+
+            # BACI capacity cap (nach Flow-Propagation)
+            if self._use_baci_capacity and eid in s.baci_capacity:
+                es.supply = min(es.supply, s.baci_capacity[eid])
 
     # ------------------------------------------------------------------
     # Phase 5: Health

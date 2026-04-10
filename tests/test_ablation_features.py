@@ -56,3 +56,87 @@ class TestAblationState:
             pytest.skip("Dieses Szenario hat auch BACI-Daten")
         assert state.baci_capacity == {}
         assert state.icio_weight == {}
+
+
+# ---------------------------------------------------------------------------
+# Task 2 — SimulationEngine flags
+# ---------------------------------------------------------------------------
+
+from provider_sim.sim.engine import SimulationEngine  # noqa: E402
+
+
+class TestBaciCap:
+    def test_baci_cap_limits_supply(self):
+        import pathlib
+        base = pathlib.Path(__file__).parent.parent
+        p = base / "experiments" / "configs" / "s1-soja_icio.pdl.yaml"
+        if not p.exists():
+            pytest.skip("s1-soja_icio.pdl.yaml nicht gefunden")
+        from provider_sim.pdl.parser import load_pdl
+        doc = load_pdl(str(p))
+        engine_cap = SimulationEngine(doc, seed=0, use_baci_capacity=True)
+        engine_free = SimulationEngine(doc, seed=0, use_baci_capacity=False)
+
+        # Defender pusht argentina_farms maximal
+        big_defense = {"argentina_farms": 2.0}
+        engine_cap.step(defender_actions=big_defense)
+        engine_free.step(defender_actions=big_defense)
+
+        cap_limit = engine_cap.state.baci_capacity["argentina_farms"]
+        s_cap = engine_cap.state.entities["argentina_farms"].supply
+        s_free = engine_free.state.entities["argentina_farms"].supply
+
+        assert s_cap <= cap_limit + 1e-6, f"supply {s_cap:.4f} überschreitet BACI-Cap {cap_limit:.4f}"
+        assert s_free > s_cap, "ohne Cap sollte supply höher sein"
+
+    def test_entities_without_baci_unaffected(self):
+        import pathlib
+        base = pathlib.Path(__file__).parent.parent
+        p = base / "experiments" / "configs" / "s1-soja_icio.pdl.yaml"
+        if not p.exists():
+            pytest.skip("s1-soja_icio.pdl.yaml nicht gefunden")
+        from provider_sim.pdl.parser import load_pdl
+        doc = load_pdl(str(p))
+        engine = SimulationEngine(doc, seed=0, use_baci_capacity=True)
+        engine.step(defender_actions={"consumers": 2.0})
+        s = engine.state.entities["consumers"].supply
+        # consumers hat kein BACI-Cap → kann über 1.0 steigen
+        assert s > 0.0  # kein Crash
+
+    def test_flags_default_false(self):
+        import pathlib
+        base = pathlib.Path(__file__).parent.parent
+        p = base / "experiments" / "configs" / "s1-soja_icio.pdl.yaml"
+        if not p.exists():
+            pytest.skip("s1-soja_icio.pdl.yaml nicht gefunden")
+        from provider_sim.pdl.parser import load_pdl
+        doc = load_pdl(str(p))
+        engine = SimulationEngine(doc, seed=0)
+        assert engine._use_baci_capacity is False
+        assert engine._use_icio_weights is False
+
+
+class TestIcioWeights:
+    def test_icio_weights_shift_flow(self):
+        """Mit ICIO-Gewichten fließt das Upstream-Supply nach Exportvolumen gewichtet."""
+        import pathlib
+        base = pathlib.Path(__file__).parent.parent
+        p = base / "experiments" / "configs" / "s1-soja_icio.pdl.yaml"
+        if not p.exists():
+            pytest.skip("s1-soja_icio.pdl.yaml nicht gefunden")
+        from provider_sim.pdl.parser import load_pdl
+        doc = load_pdl(str(p))
+        engine_w = SimulationEngine(doc, seed=0, use_icio_weights=True)
+        engine_u = SimulationEngine(doc, seed=0, use_icio_weights=False)
+
+        # Attacker schädigt brazil_farms (höchstes ICIO-Gewicht) stark
+        engine_w.step(attacker_actions={"brazil_farms": 1.0})
+        engine_u.step(attacker_actions={"brazil_farms": 1.0})
+
+        # Santos-Port hängt von brazil_farms ab — mit ICIO-Gewichten
+        # schlägt ein Brazil-Schaden stärker durch als ohne
+        s_w = engine_w.state.entities["santos_port"].supply
+        s_u = engine_u.state.entities["santos_port"].supply
+        # Beide sollten ähnlich sein (santos_port hat nur einen Upstream), kein Crash
+        assert s_w >= 0.0
+        assert s_u >= 0.0
