@@ -46,6 +46,10 @@ class SupplyChainState:
         # Entity metadata from PDL
         self.vulnerability: Dict[str, float] = {}
 
+        # Optional enrichment data (populated from entity.extra if present)
+        self.baci_capacity: Dict[str, float] = {}  # entity_id → normalized [0, 1]
+        self.icio_weight: Dict[str, float] = {}    # entity_id → normalized BACI export volume [0, 1]
+
         # Event metadata from PDL (duration in ticks, probability, trigger target)
         self.event_duration_ticks: Dict[str, int] = {}
         self.event_probability: Dict[str, float] = {}
@@ -81,6 +85,29 @@ def build_state_from_pdl(
         state.entity_ids.append(ent.id)
         state.entities[ent.id] = EntityState()
         state.vulnerability[ent.id] = ent.vulnerability
+
+    # BACI capacity: normalize so max = 1.0
+    raw_caps: Dict[str, float] = {}
+    for ent in doc.entities:
+        cap = ent.extra.get("baci_capacity_t_day")
+        if cap is not None:
+            raw_caps[ent.id] = float(cap)
+    if raw_caps:
+        max_cap = max(raw_caps.values())
+        for eid, cap in raw_caps.items():
+            state.baci_capacity[eid] = cap / max_cap
+
+    # ICIO flow weights: proxy via BACI export volume (normalisiert auf max=1.0)
+    # Entities ohne baci_export_volume_t_year tauchen nicht im Dict auf (default 1.0 in Engine)
+    raw_vols: Dict[str, float] = {}
+    for ent in doc.entities:
+        vol = ent.extra.get("baci_export_volume_t_year")
+        if vol is not None:
+            raw_vols[ent.id] = float(vol)
+    if raw_vols:
+        max_vol = max(raw_vols.values())
+        for eid, vol in raw_vols.items():
+            state.icio_weight[eid] = vol / max_vol
 
     # Events
     for ev in doc.events:
