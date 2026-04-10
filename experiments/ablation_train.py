@@ -175,11 +175,13 @@ def _run_episode(
     return total_def_r / max(steps, 1), atk_buf, def_buf
 
 
-def _run_single_seed(baci: bool, icio: bool, seed: int, budget_secs: int) -> float:
+def _run_single_seed(baci: bool, icio: bool, seed: int, budget_secs: int,
+                     baci_scale: float = 1.0, icio_norm: str = "linear") -> float:
     """Train from scratch for budget_secs, return mean val_reward over VAL_SEEDS."""
     env = ProviderEnvironment(
         pdl_source=_SCENARIO, seed=seed, max_ticks=_MAX_TICKS,
         use_baci_capacity=baci, use_icio_weights=icio,
+        baci_capacity_scale=baci_scale, icio_norm=icio_norm,
     )
     obs_names = env.sensor_names
     atk_names = [n for n in env.actuator_names if n.startswith("attacker.")]
@@ -234,13 +236,21 @@ def main() -> None:
     parser.add_argument("--icio",    action="store_true", help="ICIO-Ghosh-Gewichte")
     parser.add_argument("--n-seeds", type=int, default=5,   metavar="N")
     parser.add_argument("--budget",  type=int, default=300, metavar="SECS")
+    parser.add_argument("--baci-scale", type=float, default=1.0,
+                        metavar="S", help="BACI-Cap-Multiplikator (default: 1.0)")
+    parser.add_argument("--icio-norm", type=str, default="linear",
+                        choices=["linear", "sqrt", "softmax", "uniform"],
+                        help="ICIO-Normalisierungsschema (default: linear)")
     args = parser.parse_args()
 
     if not os.path.isfile(_SCENARIO):
         print(f"[ablation] ERROR: Szenario nicht gefunden: {_SCENARIO}")
         sys.exit(1)
 
-    variant = f"baci={'1' if args.baci else '0'}_icio={'1' if args.icio else '0'}"
+    variant = (f"baci={'1' if args.baci else '0'}"
+               f"_icio={'1' if args.icio else '0'}"
+               f"_scale={args.baci_scale}"
+               f"_norm={args.icio_norm}")
     print(f"[ablation] Variante : {variant}")
     print(f"[ablation] Szenario : {_SCENARIO}")
     print(f"[ablation] Seeds    : {args.n_seeds} x {args.budget}s Training")
@@ -249,7 +259,11 @@ def main() -> None:
     rewards = []
     for seed in range(args.n_seeds):
         print(f"\n[ablation] --- Seed {seed + 1}/{args.n_seeds} ---")
-        r = _run_single_seed(baci=args.baci, icio=args.icio, seed=seed, budget_secs=args.budget)
+        r = _run_single_seed(
+            baci=args.baci, icio=args.icio, seed=seed,
+            budget_secs=args.budget,
+            baci_scale=args.baci_scale, icio_norm=args.icio_norm,
+        )
         rewards.append(r)
 
     print(f"\n[ablation] === Ergebnis {variant} ===")
