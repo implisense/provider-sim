@@ -140,3 +140,37 @@ class TestIcioWeights:
         # Beide sollten ähnlich sein (santos_port hat nur einen Upstream), kein Crash
         assert s_w >= 0.0
         assert s_u >= 0.0
+
+
+# ---------------------------------------------------------------------------
+# Task 3 — ProviderEnvironment leitet Flags durch
+# ---------------------------------------------------------------------------
+
+from provider_sim.env.environment import ProviderEnvironment  # noqa: E402
+import pathlib as _pl  # noqa: E402
+
+
+class TestEnvironmentFlags:
+    @staticmethod
+    def _icio_path():
+        base = _pl.Path(__file__).parent.parent
+        p = base / "experiments" / "configs" / "s1-soja_icio.pdl.yaml"
+        if not p.exists():
+            pytest.skip("s1-soja_icio.pdl.yaml nicht gefunden")
+        return str(p)
+
+    def test_baci_flag_passed_to_engine(self):
+        p = self._icio_path()
+        env = ProviderEnvironment(pdl_source=p, seed=0, use_baci_capacity=True)
+        assert env.engine._use_baci_capacity is True
+
+    def test_icio_flag_passed_to_engine(self):
+        p = self._icio_path()
+        env = ProviderEnvironment(pdl_source=p, seed=0, use_icio_weights=True)
+        assert env.engine._use_icio_weights is True
+
+    def test_defaults_are_false(self):
+        p = self._icio_path()
+        env = ProviderEnvironment(pdl_source=p, seed=0)
+        assert env.engine._use_baci_capacity is False
+        assert env.engine._use_icio_weights is False

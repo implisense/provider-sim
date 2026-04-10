@@ -191,6 +191,8 @@ class ProviderEnvironment(_BaseEnv):
         max_ticks: int = 365,
         uid: str = "provider_env",
         broker_uri: str = "",
+        use_baci_capacity: bool = False,
+        use_icio_weights: bool = False,
         **kwargs: Any,
     ) -> None:
         if _HAS_PALAESTRAI:
@@ -205,7 +207,13 @@ class ProviderEnvironment(_BaseEnv):
 
         self._seed = seed
         self._max_ticks = max_ticks
-        self.engine = SimulationEngine(self.doc, seed=seed, max_ticks=max_ticks)
+        self.engine = SimulationEngine(
+            self.doc,
+            seed=seed,
+            max_ticks=max_ticks,
+            use_baci_capacity=use_baci_capacity,
+            use_icio_weights=use_icio_weights,
+        )
 
         # Pre-build space descriptors (id → Space)
         self._sensor_defs: List[Tuple[str, Any]] = []
