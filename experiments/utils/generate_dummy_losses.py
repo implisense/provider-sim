@@ -7,7 +7,7 @@ Zusätzlich wird ein Dimensions-Scarcity-Bonus berücksichtigt:
 Szenarien mit seltenen Dimensionen erhalten einen höheren Loss.
 
 CLI:
-    python palestrai_simulation/generate_dummy_losses.py \
+    python experiments/utils/generate_dummy_losses.py \
         --db gap-explorer/data/scenarios.db \
         --output gap-explorer/data/arl_loss_report.json
 
@@ -59,8 +59,7 @@ def load_dimensions_from_db(db_path: str) -> dict:
     for row_id, dims_raw in rows:
         if dims_raw:
             try:
-                import json as _json
-                result[row_id] = _json.loads(dims_raw)
+                result[row_id] = json.loads(dims_raw)
             except Exception:
                 result[row_id] = []
         else:

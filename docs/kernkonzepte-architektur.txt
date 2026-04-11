@@ -1,0 +1,55 @@
+palaestrAI — Überblick
+
+  palaestrAI ist ein verteiltes Framework zum Training und Testen autonomer Agenten. Es wurde am OFFIS e.V. entwickelt und implementiert das Konzept des Adversarial
+  Resilience Learning (ARL) — Angreifer- und Verteidiger-Agenten agieren in cyber-physischen Systemen, wobei sie die Aktionen des Gegners nicht direkt wahrnehmen, sondern
+   nur den Systemzustand.
+
+  Kernkonzepte & Architektur
+  ┌───────────────────────┬─────────────────────────────────────────────────────────────────────────────────────┐
+  │        Konzept        │                                    Beschreibung                                     │
+  ├───────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+  │ Agent                 │ Besteht aus Brain (Entscheidungsfindung/Algorithmus) und Muscle (Aktionsausführung) │
+  ├───────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+  │ Environment           │ Simulationsumgebung (OpenAI Gym, mosaik Co-Simulation, eigene)                      │
+  ├───────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+  │ Experiment Run        │ YAML-definierte Konfiguration eines Durchlaufs                                      │
+  ├───────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+  │ Phasen & Episoden     │ Hierarchie: Experiment → Runs → Phasen → Episoden                                   │
+  ├───────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤
+  │ Simulation Controller │ Steuert die Agent-Umgebung-Interaktion (z.B. Turn-Taking, Scatter-Gather)           │
+  └───────────────────────┴─────────────────────────────────────────────────────────────────────────────────────┘
+  Paketstruktur (src/palaestrai/)
+
+  agent/          – Agenten-Implementierung (Brain + Muscle)
+  cli/            – Kommandozeilen-Interface
+  core/           – Kernfunktionalität & RuntimeConfig
+  entrypoints/    – Einstiegspunkte
+  environment/    – Umgebungsverwaltung
+  experiment/     – Experiment-Management
+  logging/        – Logging-Utilities
+  simulation/     – Simulationsengine
+  store/          – Datenpersistenz (SQLAlchemy, PostgreSQL/TimescaleDB)
+  types/          – Typdefinitionen
+  util/           – Hilfsfunktionen
+
+  Ökosystem
+
+  - hARL — Deep Reinforcement Learning Algorithmen
+  - arsenAI — Experiment-Design-Tool
+  - palaestrai-mosaik — Co-Simulationsanbindung an mosaik
+  - palaestrai-environments — Beispielumgebungen (z.B. Tic-Tac-Toe)
+
+  Technische Details
+
+  - Python 3.10+, Lizenz: LGPLv2.1
+  - Abhängigkeiten: NumPy, Pandas, Dask, SQLAlchemy, Click, uvloop, aiomultiprocess
+  - CLI-Tools: palaestrai (Haupt-CLI), palaestrai-scheduler, arl-apply-migrations
+  - Ergebnisse werden in einer Datenbank gespeichert (SQLite lokal oder PostgreSQL/TimescaleDB)
+  - Ergebnisabfrage über palaestrai.store.query liefert Pandas/Dask DataFrames
+
+  Typischer Workflow
+
+  1. Experiment definieren — YAML-Datei mit Agenten (Brain+Muscle), Umgebung, Sensoren/Aktuatoren, Phasen
+  2. Datenbank konfigurieren — SQLite oder PostgreSQL
+  3. Ausführen — palaestrai.execute() oder CLI
+  4. Ergebnisse analysieren — Abfrage der gespeicherten Metriken als DataFrames

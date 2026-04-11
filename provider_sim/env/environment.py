@@ -66,58 +66,56 @@ except ImportError:
             self.shape = shape or ()
             self.dtype = np.dtype(dtype)
 
-        def reshape_to_space(self, value: Any, **kw: Any) -> np.ndarray:
-            return np.reshape(np.array(value), self.shape)
+        def reshape_to_space(self, v: Any, **kw: Any) -> np.ndarray:
+            return np.reshape(np.array(v), self.shape)
 
     class Discrete:  # type: ignore[no-redef]
         def __init__(self, n: int) -> None:
             self.n = n
 
-        def reshape_to_space(self, value: Any, **kw: Any) -> np.ndarray:
-            if np.isscalar(value) or np.ndim(value) == 0:
-                return np.array([value])
-            return np.array(value)
+        def reshape_to_space(self, v: Any, **kw: Any) -> np.ndarray:
+            if np.isscalar(v) or np.ndim(v) == 0:
+                return np.array([v])
+            return np.array(v)
 
     class SensorInformation:  # type: ignore[no-redef]
-        def __init__(self, sensor_value: Any, observation_space: Any, sensor_id: Any = None) -> None:
-            self.sensor_value = sensor_value
-            self.observation_space = observation_space
-            self.sensor_id = sensor_id
-
-        @property
-        def id(self) -> Any:
-            return self.sensor_id
-
-        @id.setter
-        def id(self, value: Any) -> None:
-            self.sensor_id = value
+        def __init__(
+            self,
+            value: Any = None,
+            space: Any = None,
+            uid: Any = None,
+            **kwargs: Any,
+        ) -> None:
+            self.value = value
+            self.space = space
+            self.uid = uid
 
     class ActuatorInformation:  # type: ignore[no-redef]
-        def __init__(self, setpoint: Any, action_space: Any, actuator_id: Any = None) -> None:
-            self._setpoint = setpoint
-            self.action_space = action_space
-            self.actuator_id = actuator_id
-
-        @property
-        def setpoint(self) -> Any:
-            return self._setpoint
-
-        @property
-        def id(self) -> Any:
-            return self.actuator_id
-
-        @id.setter
-        def id(self, value: Any) -> None:
-            self.actuator_id = value
+        def __init__(
+            self,
+            value: Any = None,
+            space: Any = None,
+            uid: Any = None,
+            **kwargs: Any,
+        ) -> None:
+            self.value = value
+            self.space = space
+            self.uid = uid
 
     class RewardInformation:  # type: ignore[no-redef]
-        def __init__(self, reward_value: Any, observation_space: Any, reward_id: Any = None) -> None:
-            self.reward_value = reward_value
-            self.observation_space = observation_space
-            self.reward_id = reward_id
+        def __init__(
+            self,
+            value: Any = None,
+            space: Any = None,
+            uid: Any = None,
+            **kwargs: Any,
+        ) -> None:
+            self.value = value
+            self.space = space
+            self.uid = uid
 
         def __call__(self) -> Any:
-            return self.reward_value
+            return self.value
 
     class EnvironmentBaseline:  # type: ignore[no-redef]
         def __init__(
@@ -125,10 +123,12 @@ except ImportError:
             sensors_available: List[Any],
             actuators_available: List[Any],
             simtime: Any = None,
+            static_world_model: Any = None,
         ) -> None:
             self.sensors_available = sensors_available
             self.actuators_available = actuators_available
             self.simtime = simtime or SimTime(simtime_ticks=1, simtime_timestamp=None)
+            self.static_world_model = static_world_model
 
     class EnvironmentState:  # type: ignore[no-redef]
         def __init__(
@@ -136,11 +136,13 @@ except ImportError:
             sensor_information: List[Any],
             rewards: List[Any],
             done: bool,
+            world_state: Any = None,
             simtime: Any = None,
         ) -> None:
             self.sensor_information = sensor_information
             self.rewards = rewards
             self.done = done
+            self.world_state = world_state
             self.simtime = simtime
 
 
@@ -191,10 +193,14 @@ class ProviderEnvironment(_BaseEnv):
         max_ticks: int = 365,
         uid: str = "provider_env",
         broker_uri: str = "",
+        use_baci_capacity: bool = False,
+        use_icio_weights: bool = False,
+        baci_capacity_scale: float = 1.0,
+        icio_norm: str = "linear",
         **kwargs: Any,
     ) -> None:
         if _HAS_PALAESTRAI:
-            super().__init__(uid=uid, broker_uri=broker_uri, seed=seed)
+            super().__init__(uid=uid, seed=seed)
         else:
             super().__init__()
 
@@ -205,7 +211,15 @@ class ProviderEnvironment(_BaseEnv):
 
         self._seed = seed
         self._max_ticks = max_ticks
-        self.engine = SimulationEngine(self.doc, seed=seed, max_ticks=max_ticks)
+        self.engine = SimulationEngine(
+            self.doc,
+            seed=seed,
+            max_ticks=max_ticks,
+            use_baci_capacity=use_baci_capacity,
+            use_icio_weights=use_icio_weights,
+            baci_capacity_scale=baci_capacity_scale,
+            icio_norm=icio_norm,
+        )
 
         # Pre-build space descriptors (id → Space)
         self._sensor_defs: List[Tuple[str, Any]] = []
@@ -258,8 +272,8 @@ class ProviderEnvironment(_BaseEnv):
         defender_actions: Dict[str, float] = {}
 
         for act in actuators:
-            aid = act.actuator_id if hasattr(act, "actuator_id") else act.id
-            raw = act.setpoint if hasattr(act, "setpoint") else act._setpoint
+            aid = act.uid
+            raw = act.value
             setpoint = float(np.asarray(raw).item())
             if aid.startswith("attacker."):
                 attacker_actions[aid[len("attacker."):]] = setpoint
@@ -322,11 +336,11 @@ class ProviderEnvironment(_BaseEnv):
         for sid, space in self._sensor_defs:
             val = values[sid]
             if isinstance(space, Discrete):
-                sensors.append(SensorInformation(int(val), space, sensor_id=sid))
+                sensors.append(SensorInformation(value=int(val), space=space, uid=sid))
             else:
                 sensors.append(
                     SensorInformation(
-                        np.array([val], dtype=np.float32), space, sensor_id=sid
+                        value=np.array([val], dtype=np.float32), space=space, uid=sid
                     )
                 )
         return sensors
@@ -334,7 +348,7 @@ class ProviderEnvironment(_BaseEnv):
     def _build_actuators(self) -> List[ActuatorInformation]:
         return [
             ActuatorInformation(
-                np.array([0.0], dtype=np.float32), space, actuator_id=aid
+                value=np.array([0.0], dtype=np.float32), space=space, uid=aid
             )
             for aid, space in self._actuator_defs
         ]
@@ -347,14 +361,14 @@ class ProviderEnvironment(_BaseEnv):
         mean_health = sum(healths) / len(healths) if healths else 0.0
         return [
             RewardInformation(
-                np.array([1.0 - mean_health], dtype=np.float32),
-                _REWARD_SPACE,
-                reward_id="reward.attacker",
+                value=np.array([1.0 - mean_health], dtype=np.float32),
+                space=_REWARD_SPACE,
+                uid="reward.attacker",
             ),
             RewardInformation(
-                np.array([mean_health], dtype=np.float32),
-                _REWARD_SPACE,
-                reward_id="reward.defender",
+                value=np.array([mean_health], dtype=np.float32),
+                space=_REWARD_SPACE,
+                uid="reward.defender",
             ),
         ]
 

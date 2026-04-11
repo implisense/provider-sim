@@ -15,14 +15,14 @@ _REWARD_SPACE = _box_space(0.0, 1.0)
 def _make_rewards(attacker_val: float, defender_val: float):
     return [
         RewardInformation(
-            np.array([attacker_val], dtype=np.float32),
-            _REWARD_SPACE,
-            reward_id="reward.attacker",
+            value=np.array([attacker_val], dtype=np.float32),
+            space=_REWARD_SPACE,
+            uid="reward.attacker",
         ),
         RewardInformation(
-            np.array([defender_val], dtype=np.float32),
-            _REWARD_SPACE,
-            reward_id="reward.defender",
+            value=np.array([defender_val], dtype=np.float32),
+            space=_REWARD_SPACE,
+            uid="reward.defender",
         ),
     ]
 
@@ -37,9 +37,9 @@ class TestAttackerObjective:
         obj = AttackerObjective(reward_id="reward.attacker")
         rewards = [
             RewardInformation(
-                np.array([0.5], dtype=np.float32),
-                _REWARD_SPACE,
-                reward_id="reward.other",
+                value=np.array([0.5], dtype=np.float32),
+                space=_REWARD_SPACE,
+                uid="reward.other",
             )
         ]
         assert obj.internal_reward(rewards) == 0.0
@@ -52,9 +52,9 @@ class TestAttackerObjective:
         obj = AttackerObjective(reward_id="custom.attacker")
         rewards = [
             RewardInformation(
-                np.array([0.9], dtype=np.float32),
-                _REWARD_SPACE,
-                reward_id="custom.attacker",
+                value=np.array([0.9], dtype=np.float32),
+                space=_REWARD_SPACE,
+                uid="custom.attacker",
             )
         ]
         assert obj.internal_reward(rewards) == pytest.approx(0.9)
@@ -74,9 +74,9 @@ class TestDefenderObjective:
         obj = DefenderObjective(reward_id="reward.defender")
         rewards = [
             RewardInformation(
-                np.array([0.5], dtype=np.float32),
-                _REWARD_SPACE,
-                reward_id="reward.other",
+                value=np.array([0.5], dtype=np.float32),
+                space=_REWARD_SPACE,
+                uid="reward.other",
             )
         ]
         assert obj.internal_reward(rewards) == 0.0
@@ -89,9 +89,9 @@ class TestDefenderObjective:
         obj = DefenderObjective(reward_id="custom.defender")
         rewards = [
             RewardInformation(
-                np.array([0.4], dtype=np.float32),
-                _REWARD_SPACE,
-                reward_id="custom.defender",
+                value=np.array([0.4], dtype=np.float32),
+                space=_REWARD_SPACE,
+                uid="custom.defender",
             )
         ]
         assert obj.internal_reward(rewards) == pytest.approx(0.4)

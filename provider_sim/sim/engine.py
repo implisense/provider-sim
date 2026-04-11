@@ -23,10 +23,18 @@ class SimulationEngine:
         doc: PdlDocument,
         seed: int | None = None,
         max_ticks: int = 365,
+        use_baci_capacity: bool = False,
+        use_icio_weights: bool = False,
+        baci_capacity_scale: float = 1.0,
+        icio_norm: str = "linear",
     ) -> None:
         self.doc = doc
         self._seed = seed
         self._max_ticks = max_ticks
+        self._use_baci_capacity = use_baci_capacity
+        self._use_icio_weights = use_icio_weights
+        self._baci_capacity_scale = baci_capacity_scale
+        self._icio_norm = icio_norm
         self.state = build_state_from_pdl(doc, seed=seed, max_ticks=max_ticks)
 
         # Pre-parse condition ASTs
@@ -232,9 +240,27 @@ class SimulationEngine:
             ups = s.upstream.get(eid, set())
 
             if ups:
-                incoming = [s.entities[u].supply for u in ups if u in s.entities]
+                upstream_ids = [u for u in ups if u in s.entities]
+                incoming = [s.entities[u].supply for u in upstream_ids]
                 if incoming:
-                    mean_incoming = sum(incoming) / len(incoming)
+                    if self._use_icio_weights:
+                        raw_w = [s.icio_weight.get(u, 1.0) for u in upstream_ids]
+                        if self._icio_norm == "sqrt":
+                            weights = [w ** 0.5 for w in raw_w]
+                        elif self._icio_norm == "softmax":
+                            max_w = max(raw_w)
+                            exp_w = [float(np.exp(w - max_w)) for w in raw_w]
+                            weights = exp_w
+                        elif self._icio_norm == "uniform":
+                            weights = [1.0] * len(raw_w)
+                        else:  # "linear" (default)
+                            weights = raw_w
+                        total_w = sum(weights)
+                        mean_incoming = sum(
+                            sup * w for sup, w in zip(incoming, weights)
+                        ) / total_w
+                    else:
+                        mean_incoming = sum(incoming) / len(incoming)
                     es.supply = min(es.supply, mean_incoming)
 
             # Dependency penalty
@@ -244,6 +270,11 @@ class SimulationEngine:
                 if dep_es and dep_es.supply < 0.5:
                     penalty = 0.3 * (1.0 - dep_es.supply)
                     es.supply = max(0.0, es.supply - penalty)
+
+            # BACI capacity cap (nach Flow-Propagation)
+            if self._use_baci_capacity and eid in s.baci_capacity:
+                scaled_cap = min(2.0, s.baci_capacity[eid] * self._baci_capacity_scale)
+                es.supply = min(es.supply, scaled_cap)
 
     # ------------------------------------------------------------------
     # Phase 5: Health

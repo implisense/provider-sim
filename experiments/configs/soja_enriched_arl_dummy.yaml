@@ -1,0 +1,232 @@
+uid: provider-soy_feed_disruption-arl-dummy
+seed: 42
+version: 3.4.1
+schedule:
+- phase_train:
+    environments:
+    - environment:
+        name: provider_sim.env.environment:ProviderEnvironment
+        uid: provider_env
+        params:
+          pdl_source: /Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/palestrai_simulation/scenarios/s1-soja_enriched.pdl.yaml
+          max_ticks: 365
+      reward:
+        name: palaestrai.agent.dummy_objective:DummyObjective
+        params:
+          params: {}
+    agents:
+    - name: attacker
+      brain:
+        name: palaestrai.agent.dummy_brain:DummyBrain
+        params: {}
+      muscle:
+        name: palaestrai.agent.dummy_muscle:DummyMuscle
+        params: {}
+      objective:
+        name: provider_sim.env.objectives:AttackerObjective
+        params:
+          reward_id: reward.attacker
+      sensors: &id001
+      - provider_env.entity.brazil_farms.supply
+      - provider_env.entity.brazil_farms.demand
+      - provider_env.entity.brazil_farms.price
+      - provider_env.entity.brazil_farms.health
+      - provider_env.entity.argentina_farms.supply
+      - provider_env.entity.argentina_farms.demand
+      - provider_env.entity.argentina_farms.price
+      - provider_env.entity.argentina_farms.health
+      - provider_env.entity.us_farms.supply
+      - provider_env.entity.us_farms.demand
+      - provider_env.entity.us_farms.price
+      - provider_env.entity.us_farms.health
+      - provider_env.entity.santos_port.supply
+      - provider_env.entity.santos_port.demand
+      - provider_env.entity.santos_port.price
+      - provider_env.entity.santos_port.health
+      - provider_env.entity.paranagua_port.supply
+      - provider_env.entity.paranagua_port.demand
+      - provider_env.entity.paranagua_port.price
+      - provider_env.entity.paranagua_port.health
+      - provider_env.entity.rotterdam_port.supply
+      - provider_env.entity.rotterdam_port.demand
+      - provider_env.entity.rotterdam_port.price
+      - provider_env.entity.rotterdam_port.health
+      - provider_env.entity.hamburg_port.supply
+      - provider_env.entity.hamburg_port.demand
+      - provider_env.entity.hamburg_port.price
+      - provider_env.entity.hamburg_port.health
+      - provider_env.entity.eu_oil_mills.supply
+      - provider_env.entity.eu_oil_mills.demand
+      - provider_env.entity.eu_oil_mills.price
+      - provider_env.entity.eu_oil_mills.health
+      - provider_env.entity.feed_mills.supply
+      - provider_env.entity.feed_mills.demand
+      - provider_env.entity.feed_mills.price
+      - provider_env.entity.feed_mills.health
+      - provider_env.entity.poultry_farms.supply
+      - provider_env.entity.poultry_farms.demand
+      - provider_env.entity.poultry_farms.price
+      - provider_env.entity.poultry_farms.health
+      - provider_env.entity.pig_farms.supply
+      - provider_env.entity.pig_farms.demand
+      - provider_env.entity.pig_farms.price
+      - provider_env.entity.pig_farms.health
+      - provider_env.entity.dairy_farms.supply
+      - provider_env.entity.dairy_farms.demand
+      - provider_env.entity.dairy_farms.price
+      - provider_env.entity.dairy_farms.health
+      - provider_env.entity.food_retail.supply
+      - provider_env.entity.food_retail.demand
+      - provider_env.entity.food_retail.price
+      - provider_env.entity.food_retail.health
+      - provider_env.entity.consumers.supply
+      - provider_env.entity.consumers.demand
+      - provider_env.entity.consumers.price
+      - provider_env.entity.consumers.health
+      - provider_env.entity.alternative_protein_sources.supply
+      - provider_env.entity.alternative_protein_sources.demand
+      - provider_env.entity.alternative_protein_sources.price
+      - provider_env.entity.alternative_protein_sources.health
+      - provider_env.entity.soy_oil_market.supply
+      - provider_env.entity.soy_oil_market.demand
+      - provider_env.entity.soy_oil_market.price
+      - provider_env.entity.soy_oil_market.health
+      - provider_env.entity.us_gulf_ports.supply
+      - provider_env.entity.us_gulf_ports.demand
+      - provider_env.entity.us_gulf_ports.price
+      - provider_env.entity.us_gulf_ports.health
+      - provider_env.entity.strategic_feed_reserves.supply
+      - provider_env.entity.strategic_feed_reserves.demand
+      - provider_env.entity.strategic_feed_reserves.price
+      - provider_env.entity.strategic_feed_reserves.health
+      - provider_env.entity.gas_supply.supply
+      - provider_env.entity.gas_supply.demand
+      - provider_env.entity.gas_supply.price
+      - provider_env.entity.gas_supply.health
+      - provider_env.entity.fertilizer_supply.supply
+      - provider_env.entity.fertilizer_supply.demand
+      - provider_env.entity.fertilizer_supply.price
+      - provider_env.entity.fertilizer_supply.health
+      - provider_env.event.brazil_drought.active
+      - provider_env.event.soy_export_reduction.active
+      - provider_env.event.port_congestion.active
+      - provider_env.event.feed_price_spike.active
+      - provider_env.event.livestock_pressure.active
+      - provider_env.event.gas_price_spike.active
+      - provider_env.event.ammonia_halt.active
+      - provider_env.event.oil_mill_slowdown.active
+      - provider_env.event.fertilizer_demand_spike.active
+      - provider_env.event.consumer_price_increase.active
+      - provider_env.event.alternative_protein_activation.active
+      - provider_env.event.reserve_release.active
+      - provider_env.event.port_route_shift.active
+      - provider_env.event.argentina_supply_increase.active
+      - provider_env.event.us_supply_activated.active
+      - provider_env.event.soy_oil_shortage.active
+      - provider_env.event.consumer_substitution.active
+      - provider_env.event.feed_demand_reduction.active
+      - provider_env.event.gta_arg_exportlicensingrequirement_1001.active
+      - provider_env.event.gta_arg_exportquota_1001.active
+      - provider_env.event.gta_arg_exportlicensingrequirement_1003.active
+      - provider_env.event.gta_arg_exportquota_1003.active
+      - provider_env.event.gta_arg_exportlicensingrequirement_1005.active
+      - provider_env.event.gta_arg_exportquota_1005.active
+      - provider_env.event.gta_arg_exporttax_1006.active
+      - provider_env.event.gta_arg_exportlicensingrequirement_1007.active
+      - provider_env.event.gta_arg_exportquota_1007.active
+      - provider_env.event.gta_arg_exporttax_1202.active
+      - provider_env.event.gta_arg_exportlicensingrequirement_1206.active
+      - provider_env.event.gta_arg_exportquota_1206.active
+      - provider_env.event.gta_arg_exporttax_1208.active
+      - provider_env.event.gta_arg_exportlicensingrequirement_1507.active
+      - provider_env.event.gta_arg_exporttax_1507.active
+      - provider_env.event.gta_arg_importtariff_1509.active
+      - provider_env.event.gta_arg_exportlicensingrequirement_1512.active
+      - provider_env.event.gta_arg_exportquota_1512.active
+      - provider_env.event.gta_arg_exporttax_1517.active
+      - provider_env.event.gta_arg_exporttax_1518.active
+      - provider_env.event.gta_arg_exporttax_2302.active
+      - provider_env.event.gta_arg_exportlicensingrequirement_2304.active
+      - provider_env.event.gta_arg_exporttax_2304.active
+      - provider_env.event.gta_arg_exportlicensingrequirement_2306.active
+      - provider_env.event.gta_arg_exportquota_2306.active
+      - provider_env.event.gta_arg_exporttax_2308.active
+      - provider_env.event.gta_arg_exporttax_2309.active
+      - provider_env.event.gta_arg_importlicensingrequirement_2309.active
+      - provider_env.event.gta_usa_exportlicensingrequirement_1006.active
+      - provider_env.event.gta_usa_importtariff_1008.active
+      - provider_env.event.gta_usa_importtariff_1201.active
+      - provider_env.event.gta_usa_importtariff_1204.active
+      - provider_env.event.gta_usa_importtariff_1206.active
+      - provider_env.event.gta_usa_exportlicensingrequirement_1504.active
+      - provider_env.event.gta_usa_exportlicensingrequirement_1517.active
+      - provider_env.event.gta_usa_importtariff_2304.active
+      - provider_env.event.gta_usa_exportlicensingrequirement_2309.active
+      - provider_env.sim.tick
+      actuators:
+      - provider_env.attacker.brazil_farms
+      - provider_env.attacker.argentina_farms
+      - provider_env.attacker.us_farms
+      - provider_env.attacker.santos_port
+      - provider_env.attacker.paranagua_port
+      - provider_env.attacker.rotterdam_port
+      - provider_env.attacker.hamburg_port
+      - provider_env.attacker.eu_oil_mills
+      - provider_env.attacker.feed_mills
+      - provider_env.attacker.poultry_farms
+      - provider_env.attacker.pig_farms
+      - provider_env.attacker.dairy_farms
+      - provider_env.attacker.food_retail
+      - provider_env.attacker.consumers
+      - provider_env.attacker.alternative_protein_sources
+      - provider_env.attacker.soy_oil_market
+      - provider_env.attacker.us_gulf_ports
+      - provider_env.attacker.strategic_feed_reserves
+      - provider_env.attacker.gas_supply
+      - provider_env.attacker.fertilizer_supply
+    - name: defender
+      brain:
+        name: palaestrai.agent.dummy_brain:DummyBrain
+        params: {}
+      muscle:
+        name: palaestrai.agent.dummy_muscle:DummyMuscle
+        params: {}
+      objective:
+        name: provider_sim.env.objectives:DefenderObjective
+        params:
+          reward_id: reward.defender
+      sensors: *id001
+      actuators:
+      - provider_env.defender.brazil_farms
+      - provider_env.defender.argentina_farms
+      - provider_env.defender.us_farms
+      - provider_env.defender.santos_port
+      - provider_env.defender.paranagua_port
+      - provider_env.defender.rotterdam_port
+      - provider_env.defender.hamburg_port
+      - provider_env.defender.eu_oil_mills
+      - provider_env.defender.feed_mills
+      - provider_env.defender.poultry_farms
+      - provider_env.defender.pig_farms
+      - provider_env.defender.dairy_farms
+      - provider_env.defender.food_retail
+      - provider_env.defender.consumers
+      - provider_env.defender.alternative_protein_sources
+      - provider_env.defender.soy_oil_market
+      - provider_env.defender.us_gulf_ports
+      - provider_env.defender.strategic_feed_reserves
+      - provider_env.defender.gas_supply
+      - provider_env.defender.fertilizer_supply
+    simulation:
+      name: palaestrai.simulation.vanilla_sim_controller:VanillaSimController
+      conditions:
+      - name: palaestrai.simulation.vanilla_simcontroller_termination_condition:VanillaSimControllerTerminationCondition
+        params: {}
+    phase_config:
+      mode: train
+      worker: 1
+      episodes: 1
+run_config:
+  condition:
+    name: palaestrai.experiment.vanilla_rungovernor_termination_condition:VanillaRunGovernorTerminationCondition
+    params: {}
