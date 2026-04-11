@@ -1,0 +1,2444 @@
+pdl_version: '1.0'
+scenario:
+  id: soy_feed_disruption
+  name: Soja-Futtermittel-Lieferkette
+  sector: agriculture
+  criticality: high
+  description: Simulation der Auswirkungen einer Soja-Lieferkettenunterbrechung auf die europäische Futtermittel-
+    und Fleischproduktion
+entities:
+- id: brazil_farms
+  type: region
+  name: Sojaanbau Brasilien
+  sector: agriculture
+  location: Brazil
+  vulnerability: 0.6
+  extra:
+    baci_export_value_kusd: 48212779998.0
+    baci_export_volume_t_year: 105630580.0
+    baci_capacity_t_day: 289398.8
+    baci_year: '2022'
+    baci_country: BRA
+    baci_hs4_codes:
+    - '1201'
+    - '2304'
+    baci_export_value_musd: 62506.3
+    baci_hs120100_musd: 48360.2
+    baci_hs230400_musd: 10220.8
+    baci_hs150710_musd: 3547.6
+    santos_share: 0.3
+    santos_shock_musd: 13126.3
+    leontief_effect_musd: -24354.8
+    ghosh_effect_musd: -29086.8
+    icio_model: OECD ICIO 2025 Edition
+- id: argentina_farms
+  type: region
+  name: Sojaanbau Argentinien
+  sector: agriculture
+  location: Argentina
+  vulnerability: 0.5
+  extra:
+    baci_export_value_kusd: 18280821006.0
+    baci_export_volume_t_year: 32021576.0
+    baci_capacity_t_day: 87730.3
+    baci_year: '2022'
+    baci_country: ARG
+    baci_hs4_codes:
+    - '1201'
+    - '1202'
+    - '1507'
+    - '2304'
+    baci_hs120100_musd: 3253.4
+    substitution_capacity_musd: 3253.4
+- id: us_farms
+  type: region
+  name: Sojaanbau USA
+  sector: agriculture
+  location: United States
+  vulnerability: 0.3
+  extra:
+    baci_export_value_kusd: 34393554013.0
+    baci_export_volume_t_year: 64119820.0
+    baci_capacity_t_day: 175670.7
+    baci_year: '2022'
+    baci_country: USA
+    baci_hs4_codes:
+    - '1201'
+    - '2304'
+    baci_hs120100_musd: 33864.1
+    baci_hs230400_musd: 6339.6
+- id: santos_port
+  type: infrastructure
+  name: Hafen Santos
+  sector: logistics
+  location: Brazil
+  vulnerability: 0.7
+  _kg_source:
+    wpi_locode: BRSFE
+    wpi_note: Kein WPI-Eintrag im KG → Kapazitätsfaktor 1.0 (Default)
+- id: paranagua_port
+  type: infrastructure
+  name: Hafen Paranaguá
+  sector: logistics
+  location: Brazil
+  vulnerability: 0.65
+  _kg_source:
+    wpi_locode: BRPNG
+    wpi_repair_class: B
+    wpi_port_size: S
+    wpi_capacity_factor: 0.85
+    wpi_kg_uri: https://data.coypu.org/infrastructure/port/BRPNG
+- id: rotterdam_port
+  type: infrastructure
+  name: Hafen Rotterdam
+  sector: logistics
+  location: Netherlands
+  vulnerability: 0.3
+  _kg_source:
+    wpi_locode: NLRTM
+    wpi_repair_class: A
+    wpi_port_size: L
+    wpi_capacity_factor: 1.0
+    wpi_kg_uri: https://data.coypu.org/infrastructure/port/NLRTM
+- id: hamburg_port
+  type: infrastructure
+  name: Hafen Hamburg
+  sector: logistics
+  location: Germany
+  vulnerability: 0.3
+  _kg_source:
+    wpi_locode: DEHAM
+    wpi_repair_class: A
+    wpi_port_size: L
+    wpi_capacity_factor: 1.0
+    wpi_kg_uri: https://data.coypu.org/infrastructure/port/DEHAM
+- id: eu_oil_mills
+  type: manufacturer
+  name: EU Ölmühlen
+  sector: processing
+  location: EU
+  vulnerability: 0.5
+  _kg_source:
+    exiobase_uri: https://data.coypu.org/industry/exiobase/regional/Processing_vegetable_oils_and_fats_DE
+    exiobase_type: oilseed_sensitivity
+    exiobase_oilseed_coeff_total: 0.164
+    exiobase_top_supplier: Cultivation_of_oil_seeds_DE (0.135)
+    exiobase_parametrizer: query_exiobase_oilseed_sensitivity
+    exiobase_note: Kapazität = _exiobase_oilseed_to_capacity(0.164, 1-min_farm_cap)
+- id: feed_mills
+  type: manufacturer
+  name: Futtermittelhersteller
+  sector: processing
+  location: EU
+  vulnerability: 0.6
+  _kg_source:
+    exiobase_uri: https://data.coypu.org/industry/exiobase/regional/Processing_of_Food_products_nec_DE
+    exiobase_type: oilseed_sensitivity
+    exiobase_oilseed_coeff_total: 0.024
+    exiobase_top_supplier: Processing_vegetable_oils_and_fats_DE (0.024)
+    exiobase_parametrizer: query_exiobase_oilseed_sensitivity
+    exiobase_note: Kapazität = _exiobase_oilseed_to_capacity(0.024, 1-min_farm_cap)
+- id: poultry_farms
+  type: manufacturer
+  name: Geflügelbetriebe
+  sector: agriculture
+  location: EU
+  vulnerability: 0.8
+- id: pig_farms
+  type: manufacturer
+  name: Schweinebetriebe
+  sector: agriculture
+  location: EU
+  vulnerability: 0.75
+- id: dairy_farms
+  type: manufacturer
+  name: Milchwirtschaft
+  sector: agriculture
+  location: EU
+  vulnerability: 0.6
+- id: food_retail
+  type: service
+  name: Lebensmitteleinzelhandel
+  sector: retail
+  location: EU
+  vulnerability: 0.4
+- id: consumers
+  type: region
+  name: Verbraucher
+  sector: society
+  location: EU
+  vulnerability: 0.5
+- id: alternative_protein_sources
+  type: commodity
+  name: Alternative Proteinquellen (Raps, Sonnenblume, Erbsen)
+  sector: agriculture
+  location: EU
+  vulnerability: 0.35
+  substitution_potential: 0.2
+  note: Rapsschrot, Sonnenblumenschrot und Erbsenprotein als Sojaschrot-Substitute
+- id: soy_oil_market
+  type: commodity
+  name: Sojaöl-Markt (Nebenprodukt Ölmühlen)
+  sector: food
+  vulnerability: 0.5
+  note: ~20% Öl, ~80% Schrot bei Sojabohnenverarbeitung
+- id: us_gulf_ports
+  type: infrastructure
+  name: US-Golfhäfen (New Orleans, Houston)
+  sector: logistics
+  location: United States
+  vulnerability: 0.35
+  _kg_source:
+    wpi_locode: USNOL
+    wpi_note: Kein WPI-Eintrag im KG für USNOL → Kapazitätsfaktor 1.0 (Default)
+    wpi_kg_uri: https://data.coypu.org/infrastructure/port/USNOL
+- id: strategic_feed_reserves
+  type: commodity
+  name: Industrielle Futtermittel-Lagerbestände
+  sector: agriculture
+  location: EU
+  vulnerability: 0.2
+  capacity: 30-45d Verbrauch
+- id: gas_supply
+  type: commodity
+  name: Erdgasversorgung
+  sector: energy
+  vulnerability: 0.7
+- id: fertilizer_supply
+  type: commodity
+  name: Düngemittelversorgung
+  sector: chemistry
+  vulnerability: 0.6
+supply_chains:
+- id: soy_to_eu_main
+  name: Soja-Hauptlieferkette Brasilien-EU
+  stages:
+  - - brazil_farms
+    - santos_port
+  - - santos_port
+    - rotterdam_port
+  - - rotterdam_port
+    - eu_oil_mills
+  - - eu_oil_mills
+    - feed_mills
+  - - feed_mills
+    - poultry_farms
+  - - feed_mills
+    - pig_farms
+  - - feed_mills
+    - dairy_farms
+  - - eu_oil_mills
+    - soy_oil_market
+  - - poultry_farms
+    - food_retail
+  - - pig_farms
+    - food_retail
+  - - dairy_farms
+    - food_retail
+  - - food_retail
+    - consumers
+  - - alternative_protein_sources
+    - feed_mills
+  - - strategic_feed_reserves
+    - feed_mills
+  dependencies:
+  - from: eu_oil_mills
+    to: gas_supply
+    type: energy
+    criticality: high
+  - from: brazil_farms
+    to: fertilizer_supply
+    type: input
+    criticality: medium
+  - from: feed_mills
+    to: eu_oil_mills
+    type: input
+    criticality: high
+  - from: poultry_farms
+    to: feed_mills
+    type: input
+    criticality: high
+  - from: pig_farms
+    to: feed_mills
+    type: input
+    criticality: high
+  - from: dairy_farms
+    to: feed_mills
+    type: input
+    criticality: medium
+  - from: alternative_protein_sources
+    to: feed_mills
+    type: substitution
+    substitution_ref: sub_protein_replacement
+    criticality: medium
+  - from: strategic_feed_reserves
+    to: feed_mills
+    type: substitution
+    substitution_ref: sub_strategic_reserves
+    criticality: low
+- id: soy_to_eu_secondary
+  name: Soja-Nebenlieferkette Paranaguá
+  stages:
+  - - brazil_farms
+    - paranagua_port
+  - - paranagua_port
+    - hamburg_port
+  - - hamburg_port
+    - eu_oil_mills
+- id: soy_argentina_route
+  name: Argentinien-Alternativroute
+  stages:
+  - - argentina_farms
+    - rotterdam_port
+  - - rotterdam_port
+    - eu_oil_mills
+- id: soy_us_emergency_route
+  name: USA-Notfall-Lieferkette
+  stages:
+  - - us_farms
+    - us_gulf_ports
+  - - us_gulf_ports
+    - rotterdam_port
+  - - rotterdam_port
+    - eu_oil_mills
+  dependencies:
+  - from: eu_oil_mills
+    to: us_farms
+    type: input
+    criticality: medium
+- id: feedback_loops_chain
+  name: Feedback-Schleifen (Rückkopplungseffekte)
+  stages:
+  - - consumers
+    - feed_mills
+  - - poultry_farms
+    - feed_mills
+  - - pig_farms
+    - feed_mills
+  dependencies:
+  - from: feed_mills
+    to: poultry_farms
+    type: demand
+    criticality: medium
+    note: Bestandsabbau reduziert Futternachfrage
+  - from: feed_mills
+    to: consumers
+    type: demand
+    criticality: medium
+    note: Fleischsubstitution reduziert Nachfrage
+substitutions:
+- id: sub_protein_replacement
+  from: eu_oil_mills
+  to: alternative_protein_sources
+  type: product
+  coverage: 0.2
+  quality_delta: -0.12
+  cost_delta: 0.3
+  ramp_up: 21d
+  activation:
+    trigger: feed_price_spike.active
+    threshold:
+      price_increase: 0.25
+  reversible: true
+  side_effects:
+  - type: price_pressure
+    target: alternative_protein_sources
+    magnitude: 0.2
+    description: Mehrnachfrage nach Rapsschrot treibt dessen Preis
+  - type: quality_loss
+    target: poultry_farms
+    magnitude: -0.05
+    description: Geflügel reagiert sensibler auf Proteingehalt als Schweine
+  dependency_overlap:
+  - fertilizer_supply
+  - gas_supply
+  reference: 'UFOP 2022: Rapsschrot-Substitutionspotenzial ~15-20% bei Sojapreisschocks'
+- id: sub_supplier_argentina
+  from: brazil_farms
+  to: argentina_farms
+  type: supplier
+  coverage: 0.067
+  quality_delta: 0.0
+  cost_delta: 0.15
+  ramp_up: 14d
+  activation:
+    trigger: soy_export_reduction.active
+  reversible: true
+  side_effects:
+  - type: correlated_risk
+    description: Bei gleichzeitiger La-Niña-Dürre auch AR betroffen (2021/22 tatsächlich eingetreten)
+  dependency_overlap:
+  - fertilizer_supply
+  reference: 'USDA GATS 2022: Argentinien kompensiert BR-Ausfälle teilweise, korreliertes Klimarisiko'
+  _kg_source:
+    baci_coverage_formula: ARG/1201 / BRA/1201 = 4,831,771 / 88,173,187 = 0.055 → capped 0.055
+  _icio_source:
+    formula: ARG/1201 / BRA/1201 = 3253 / 48360
+    year: 2022
+    old_value: 0.055
+- id: sub_supplier_usa
+  from: brazil_farms
+  to: us_farms
+  type: supplier
+  coverage: 0.7
+  quality_delta: 0.0
+  cost_delta: 0.25
+  ramp_up: 30d
+  activation:
+    trigger: soy_export_reduction.active
+    threshold:
+      duration_min: 30d
+  reversible: true
+  side_effects: []
+  dependency_overlap: []
+  reference: USA größter Soja-Exporteur weltweit, Golfhäfen für EU-Verschiffung geeignet
+  _kg_source:
+    baci_coverage_formula: USA/1201 / BRA/1201 = 54,067,598 / 88,173,187 = 0.613 → capped 0.613
+  _icio_source:
+    formula: USA/1201 / BRA/1201 = 33864 / 48360
+    year: 2022
+    old_value: 0.613
+- id: sub_route_paranagua
+  from: santos_port
+  to: paranagua_port
+  type: route
+  coverage: 0.35
+  quality_delta: 0.0
+  cost_delta: 0.08
+  ramp_up: 7d
+  activation:
+    trigger: port_congestion.active
+  reversible: true
+  side_effects: []
+  reference: 'Paranaguá: zweitgrößter brasilianischer Soja-Exporthafen'
+- id: sub_consumer_plant_based
+  from: food_retail
+  to: consumers
+  type: product
+  direction: demand
+  coverage: 0.08
+  quality_delta: 0.0
+  cost_delta: 0.0
+  ramp_up: 14d
+  activation:
+    trigger: consumer_price_increase.active
+    threshold:
+      price_increase: 0.15
+  reversible: true
+  side_effects:
+  - type: demand_reduction
+    target: feed_mills
+    magnitude: -0.12
+    description: Weniger Fleisch → weniger Futtermittelnachfrage
+  reference: 'DGE 2022: Fleischkonsum DE -4,2%, bei stärkeren Preissteigerungen bis -8%'
+- id: sub_strategic_reserves
+  from: strategic_feed_reserves
+  to: feed_mills
+  type: buffer
+  coverage: 0.12
+  quality_delta: 0.0
+  cost_delta: 0.0
+  ramp_up: 3d
+  duration_max: 45d
+  activation:
+    trigger: feed_price_spike.active
+  reversible: false
+  side_effects:
+  - type: depletion
+    description: 'Nach Nutzung: Lager müssen zu erhöhten Preisen wiederbefüllt werden'
+  reference: Typische Lagerreichweite EU-Futtermittelindustrie 30-45 Tage
+- id: sub_schrot_alternative_suppliers
+  from: brazil_farms
+  to: us_farms
+  type: supplier
+  product_hs: '230400'
+  product_name: Sojaschrot
+  coverage: 0.739
+  quality_delta: 0.0
+  cost_delta: 0.2
+  ramp_up: 30d
+  activation:
+    trigger: santos_port_failure.active
+  reversible: true
+  note: 'Aggregiertes Deckungspotenzial über 8 Importeure. KRITISCH: DEU nur 19.5%, THA nur 23.3% Deckung.'
+  _icio_source:
+    year: 2022
+    bra_total_musd: 10220.8
+    santos_shock_musd: 2146.4
+    importer_detail:
+    - importer: IDN
+      ausfall_musd: 349.0
+      alt_cap_musd: 1280.8
+      coverage: 1.0
+      critical: false
+    - importer: THA
+      ausfall_musd: 294.5
+      alt_cap_musd: 68.5
+      coverage: 0.233
+      critical: true
+    - importer: NLD
+      ausfall_musd: 184.5
+      alt_cap_musd: 231.8
+      coverage: 1.0
+      critical: false
+    - importer: DEU
+      ausfall_musd: 177.8
+      alt_cap_musd: 34.7
+      coverage: 0.195
+      critical: true
+    - importer: VNM
+      ausfall_musd: 176.0
+      alt_cap_musd: 1647.5
+      coverage: 1.0
+      critical: false
+    - importer: FRA
+      ausfall_musd: 166.7
+      alt_cap_musd: 144.4
+      coverage: 0.866
+      critical: false
+    - importer: KOR
+      ausfall_musd: 144.8
+      alt_cap_musd: 118.5
+      coverage: 0.818
+      critical: false
+    - importer: ESP
+      ausfall_musd: 108.6
+      alt_cap_musd: 771.2
+      coverage: 1.0
+      critical: false
+- id: sub_rohsojaoel_alternative_suppliers
+  from: brazil_farms
+  to: us_farms
+  type: supplier
+  product_hs: '150710'
+  product_name: Rohsojaöl
+  coverage: 0.95
+  quality_delta: 0.0
+  cost_delta: 0.15
+  ramp_up: 21d
+  activation:
+    trigger: santos_port_failure.active
+  reversible: true
+  note: 'Rohsojaöl: global gut substituierbar (IND als Hauptimporteur hat hohe USA/ARG-Deckung). BRA-Schock:
+    745 Mio. USD.'
+  _icio_source:
+    year: 2022
+    bra_total_musd: 3547.6
+    santos_shock_musd: 745.0
+    coverage_note: IND (481 Mio. Ausfall) vollständig durch ARG/USA gedeckt
+- id: sub_product_230110
+  from: alternative_protein_sources
+  to: feed_mills
+  type: product
+  product_hs: '230110'
+  product_name: Fleisch-/Knochenmehl
+  coverage: 0.156
+  quality_delta: -0.05
+  cost_delta: 0.15
+  ramp_up: 60d
+  activation:
+    trigger: schrot_supply_shortage.active
+    threshold:
+      price_increase: 0.2
+      duration_min: 14d
+  reversible: true
+  side_effects:
+  - type: price_pressure
+    target: alternative_protein_sources
+    magnitude: 0.05
+    description: Nachfragesteigerung auf Fleisch-/Knochenmehl erhoht dessen Preis
+  _icio_source:
+    source: GLM 06_substitution.py
+    year: 2022
+    protein_factor: 1.14
+    protein_equiv_factor: 0.88
+    cosine_similarity: 0.753
+    deu_import_musd: 147.0
+    global_trade_musd: 3479.5
+    n_deu_suppliers: 25
+    formula: coverage = (DEU_import × 0.20 × protein_factor) / shortfall = (147.0 × 0.20 × 1.14) / 214.9
+      = 33.5 / 214.9 = 0.156
+- id: sub_product_230120
+  from: alternative_protein_sources
+  to: feed_mills
+  type: product
+  product_hs: '230120'
+  product_name: Fischmehl
+  coverage: 0.24
+  quality_delta: 0.05
+  cost_delta: 0.15
+  ramp_up: 60d
+  activation:
+    trigger: schrot_supply_shortage.active
+    threshold:
+      price_increase: 0.2
+      duration_min: 14d
+  reversible: true
+  side_effects:
+  - type: price_pressure
+    target: alternative_protein_sources
+    magnitude: 0.07
+    description: Nachfragesteigerung auf Fischmehl erhoht dessen Preis
+  _icio_source:
+    source: GLM 06_substitution.py
+    year: 2022
+    protein_factor: 1.48
+    protein_equiv_factor: 0.68
+    cosine_similarity: 0.199
+    deu_import_musd: 174.1
+    global_trade_musd: 6279.1
+    n_deu_suppliers: 25
+    formula: coverage = (DEU_import × 0.20 × protein_factor) / shortfall = (174.1 × 0.20 × 1.48) / 214.9
+      = 51.5 / 214.9 = 0.24
+- id: sub_product_230610
+  from: alternative_protein_sources
+  to: feed_mills
+  type: product
+  product_hs: '230610'
+  product_name: Baumwollsaatschrot
+  coverage: 0.001
+  quality_delta: -0.1
+  cost_delta: 0.15
+  ramp_up: 60d
+  activation:
+    trigger: schrot_supply_shortage.active
+    threshold:
+      price_increase: 0.2
+      duration_min: 14d
+  reversible: true
+  side_effects:
+  - type: price_pressure
+    target: alternative_protein_sources
+    magnitude: 0.0
+    description: Nachfragesteigerung auf Baumwollsaatschrot erhoht dessen Preis
+  _icio_source:
+    source: GLM 06_substitution.py
+    year: 2022
+    protein_factor: 0.93
+    protein_equiv_factor: 1.08
+    cosine_similarity: 0.676
+    deu_import_musd: 1.5
+    global_trade_musd: 143.6
+    n_deu_suppliers: 2
+    formula: coverage = (DEU_import × 0.20 × protein_factor) / shortfall = (1.5 × 0.20 × 0.93) / 214.9
+      = 0.3 / 214.9 = 0.001
+- id: sub_product_230630
+  from: alternative_protein_sources
+  to: feed_mills
+  type: product
+  product_hs: '230630'
+  product_name: Sonnenblumenschrot
+  coverage: 0.131
+  quality_delta: -0.12
+  cost_delta: 0.15
+  ramp_up: 60d
+  activation:
+    trigger: schrot_supply_shortage.active
+    threshold:
+      price_increase: 0.2
+      duration_min: 14d
+  reversible: true
+  side_effects:
+  - type: price_pressure
+    target: alternative_protein_sources
+    magnitude: 0.04
+    description: Nachfragesteigerung auf Sonnenblumenschrot erhoht dessen Preis
+  _icio_source:
+    source: GLM 06_substitution.py
+    year: 2022
+    protein_factor: 0.77
+    protein_equiv_factor: 1.3
+    cosine_similarity: 0.311
+    deu_import_musd: 182.5
+    global_trade_musd: 2970.4
+    n_deu_suppliers: 23
+    formula: coverage = (DEU_import × 0.20 × protein_factor) / shortfall = (182.5 × 0.20 × 0.77) / 214.9
+      = 28.1 / 214.9 = 0.131
+- id: sub_product_230641
+  from: alternative_protein_sources
+  to: feed_mills
+  type: product
+  product_hs: '230641'
+  product_name: Rapsschrot (00-Qualitaet)
+  coverage: 0.139
+  quality_delta: -0.08
+  cost_delta: 0.15
+  ramp_up: 60d
+  activation:
+    trigger: schrot_supply_shortage.active
+    threshold:
+      price_increase: 0.2
+      duration_min: 14d
+  reversible: true
+  side_effects:
+  - type: price_pressure
+    target: alternative_protein_sources
+    magnitude: 0.04
+    description: Nachfragesteigerung auf Rapsschrot (00-Qualitaet) erhoht dessen Preis
+  _icio_source:
+    source: GLM 06_substitution.py
+    year: 2022
+    protein_factor: 0.79
+    protein_equiv_factor: 1.27
+    cosine_similarity: 0.146
+    deu_import_musd: 188.8
+    global_trade_musd: 3866.7
+    n_deu_suppliers: 19
+    formula: coverage = (DEU_import × 0.20 × protein_factor) / shortfall = (188.8 × 0.20 × 0.79) / 214.9
+      = 29.8 / 214.9 = 0.139
+- id: sub_product_230649
+  from: alternative_protein_sources
+  to: feed_mills
+  type: product
+  product_hs: '230649'
+  product_name: Rapsschrot (sonstig)
+  coverage: 0.018
+  quality_delta: -0.1
+  cost_delta: 0.15
+  ramp_up: 60d
+  activation:
+    trigger: schrot_supply_shortage.active
+    threshold:
+      price_increase: 0.2
+      duration_min: 14d
+  reversible: true
+  side_effects:
+  - type: price_pressure
+    target: alternative_protein_sources
+    magnitude: 0.01
+    description: Nachfragesteigerung auf Rapsschrot (sonstig) erhoht dessen Preis
+  _icio_source:
+    source: GLM 06_substitution.py
+    year: 2022
+    protein_factor: 0.75
+    protein_equiv_factor: 1.33
+    cosine_similarity: 0.414
+    deu_import_musd: 25.8
+    global_trade_musd: 767.2
+    n_deu_suppliers: 17
+    formula: coverage = (DEU_import × 0.20 × protein_factor) / shortfall = (25.8 × 0.20 × 0.75) / 214.9
+      = 3.9 / 214.9 = 0.018
+- id: sub_product_230620
+  from: alternative_protein_sources
+  to: feed_mills
+  type: product
+  product_hs: '230620'
+  product_name: Leinsaatschrot
+  coverage: 0.002
+  quality_delta: -0.1
+  cost_delta: 0.15
+  ramp_up: 60d
+  activation:
+    trigger: schrot_supply_shortage.active
+    threshold:
+      price_increase: 0.2
+      duration_min: 14d
+  reversible: true
+  side_effects:
+  - type: price_pressure
+    target: alternative_protein_sources
+    magnitude: 0.0
+    description: Nachfragesteigerung auf Leinsaatschrot erhoht dessen Preis
+  _icio_source:
+    source: GLM 06_substitution.py
+    year: 2022
+    protein_factor: 0.77
+    protein_equiv_factor: 1.3
+    cosine_similarity: 0.286
+    deu_import_musd: 2.2
+    global_trade_musd: 85.5
+    n_deu_suppliers: 7
+    formula: coverage = (DEU_import × 0.20 × protein_factor) / shortfall = (2.2 × 0.20 × 0.77) / 214.9
+      = 0.3 / 214.9 = 0.002
+- id: sub_product_230690
+  from: alternative_protein_sources
+  to: feed_mills
+  type: product
+  product_hs: '230690'
+  product_name: Oelkuchen, sonstige
+  coverage: 0.005
+  quality_delta: -0.1
+  cost_delta: 0.15
+  ramp_up: 60d
+  activation:
+    trigger: schrot_supply_shortage.active
+    threshold:
+      price_increase: 0.2
+      duration_min: 14d
+  reversible: true
+  side_effects:
+  - type: price_pressure
+    target: alternative_protein_sources
+    magnitude: 0.0
+    description: Nachfragesteigerung auf Oelkuchen, sonstige erhoht dessen Preis
+  _icio_source:
+    source: GLM 06_substitution.py
+    year: 2022
+    protein_factor: 0.68
+    protein_equiv_factor: 1.47
+    cosine_similarity: 0.162
+    deu_import_musd: 7.7
+    global_trade_musd: 1365.7
+    n_deu_suppliers: 21
+    formula: coverage = (DEU_import × 0.20 × protein_factor) / shortfall = (7.7 × 0.20 × 0.68) / 214.9
+      = 1.0 / 214.9 = 0.005
+- id: sub_product_230660
+  from: alternative_protein_sources
+  to: feed_mills
+  type: product
+  product_hs: '230660'
+  product_name: Palmkernschrot
+  coverage: 0.016
+  quality_delta: -0.25
+  cost_delta: 0.15
+  ramp_up: 60d
+  activation:
+    trigger: schrot_supply_shortage.active
+    threshold:
+      price_increase: 0.2
+      duration_min: 14d
+  reversible: true
+  side_effects:
+  - type: price_pressure
+    target: alternative_protein_sources
+    magnitude: 0.0
+    description: Nachfragesteigerung auf Palmkernschrot erhoht dessen Preis
+  _icio_source:
+    source: GLM 06_substitution.py
+    year: 2022
+    protein_factor: 0.39
+    protein_equiv_factor: 2.56
+    cosine_similarity: 0.209
+    deu_import_musd: 44.5
+    global_trade_musd: 2252.4
+    n_deu_suppliers: 6
+    formula: coverage = (DEU_import × 0.20 × protein_factor) / shortfall = (44.5 × 0.20 × 0.39) / 214.9
+      = 3.5 / 214.9 = 0.016
+- id: sub_vertical_beans_to_meal
+  from: us_farms
+  to: eu_oil_mills
+  type: buffer
+  product_hs: '120100'
+  product_name: Sojabohnen (Rohstoff) → inlaendische Schrotung
+  coverage: 1.0
+  quality_delta: 0.0
+  cost_delta: 0.25
+  ramp_up: 90d
+  activation:
+    trigger: schrot_supply_shortage.active
+    threshold:
+      price_increase: 0.3
+      duration_min: 30d
+  reversible: true
+  side_effects:
+  - type: demand_reduction
+    target: soy_oil_market
+    magnitude: -0.1
+    description: Zusaetzliche Bohnenverarbeitung erzeugt Sojaoel als Koppelprodukt
+  _icio_source:
+    source: GLM 06_substitution.py
+    year: 2022
+    shortfall_musd: 214.9
+    beans_needed_musd: 275.5
+    meal_yield_factor: 0.78
+    tech_coeff_c10_a01: 0.040105
+    deu_c10t12_output_musd: 239163.0
+    top_bean_suppliers:
+    - 'USA: 32543 Mio. USD Headroom'
+    - 'UKR: 855 Mio. USD Headroom'
+    - 'AUT: 44 Mio. USD Headroom'
+    - 'POL: 35 Mio. USD Headroom'
+    - 'NLD: 178 Mio. USD Headroom'
+events:
+- id: santos_port_failure
+  name: Santos-Hafen-Ausfall (70% Kapazität)
+  type: infrastructure_failure
+  trigger:
+    target: santos_port
+    probability: 0.08
+  impact:
+    supply: -21%
+    duration: 90d
+  parameters:
+    santos_share_of_bra_exports: 0.3
+    shock_severity: 0.7
+    affected_value_musd: 13126.3
+    affected_products:
+    - '120100'
+    - '230400'
+    - '150710'
+  causes:
+  - soy_export_reduction
+  - feed_price_spike
+  - oil_supply_tightening
+  _icio_source:
+    leontief_total_effect_musd: -24354.8
+    ghosh_total_effect_musd: -29086.8
+    n_affected_sectors_leontief: 3927
+    n_affected_sectors_ghosh: 3928
+    top_5_affected:
+    - country_sector: CHN_C10T12
+      country: CHN
+      sector: C10T12
+      delta_x_musd: -4928.2
+    - country_sector: CHN_A01
+      country: CHN
+      sector: A01
+      delta_x_musd: -4710.82
+    - country_sector: CHN_G
+      country: CHN
+      sector: G
+      delta_x_musd: -612.49
+    - country_sector: ROW_A01
+      country: ROW
+      sector: A01
+      delta_x_musd: -492.69
+    - country_sector: ROW_C10T12
+      country: ROW
+      sector: C10T12
+      delta_x_musd: -472.32
+  reference: 'ICIO 2025 / BACI 2022: Santos ≈ 30% brasilianischer Soja-Exporte (62506 Mio. USD Gesamtkette).
+    Leontief-Multiplikator: 1.86×'
+- id: oil_supply_tightening
+  name: Sojaöl-Versorgungsengpass
+  type: market_shock
+  trigger:
+    target: soy_oil_market
+    condition: santos_port_failure.active
+  impact:
+    supply: -21%
+    price: +18%
+    duration: 120d
+  _icio_source:
+    bra_hs150710_musd: 3547.6
+    santos_shock_musd: 745.0
+  causes:
+  - feed_price_spike
+  reference: 'BRA Rohsojaöl-Export 2022: 3548 Mio. USD. Santos-Anteil: 745 Mio. betroffen.'
+- id: schrot_supply_shortage
+  name: Sojaschrot-Versorgungsengpass
+  type: market_shock
+  trigger:
+    target: feed_mills
+    condition: santos_port_failure.active
+  impact:
+    supply: -21%
+    price: +35%
+    duration: 180d
+  parameters:
+    shock_musd: 2146.4
+    critical_importers:
+      DEU:
+        coverage: 0.195
+        note: 'Kritisch: kaum Alternativen'
+      THA:
+        coverage: 0.233
+        note: 'Kritisch: Tierhaltung stark exponiert'
+      FRA:
+        coverage: 0.866
+        note: 'Moderat: Paris-Becken hat Rapsalternative'
+      NLD:
+        coverage: 1.0
+        note: 'Gut gedeckt: Rotterdam als Hub'
+  causes:
+  - feed_price_spike
+  - livestock_pressure
+  reference: 'BACI 2022: Sojaschrot BRA→Welt 10221 Mio. USD. Santos-Ausfall: 2146 Mio. USD. DEU-spezifisch:
+    nur 19,5% Substitutionsdeckung (USA+ARG+UKR+CAN).'
+- id: brazil_drought
+  name: Dürre Brasilien
+  type: natural_disaster
+  trigger:
+    target: brazil_farms
+    probability: 0.15
+  impact:
+    supply: -40%
+    duration: 90d
+  causes:
+  - soy_export_reduction
+  - fertilizer_demand_spike
+  reference: Dürre 2021/2022 Südbrasilien (La Niña) - Ertragsrückgang 42-56% regional (Rio Grande do Sul,
+    Paraná)
+- id: soy_export_reduction
+  name: Soja-Exportrückgang
+  type: market_shock
+  trigger:
+    target: santos_port
+    condition: brazil_drought.active
+  impact:
+    supply: -12%
+    duration: 120d
+  causes:
+  - feed_price_spike
+  reference: 'CONAB/USDA 2022: Exportrückgang ~9-12% (78,7 vs. 86,1 Mio. t)'
+- id: port_congestion
+  name: Hafenstau Santos
+  type: infrastructure_failure
+  trigger:
+    target: santos_port
+    probability: 0.25
+  impact:
+    supply: -20%
+    duration: 30d
+  causes:
+  - feed_price_spike
+  - port_route_shift
+  reference: Regelmäßige Engpässe während Erntesaison, 88 Schiffe Wartezeit Feb 2022
+- id: feed_price_spike
+  name: Futtermittelpreisanstieg
+  type: market_shock
+  trigger:
+    target: feed_mills
+    condition: soy_export_reduction.active
+  impact:
+    price: +45%
+    duration: 180d
+  causes:
+  - livestock_pressure
+  - alternative_protein_activation
+  - reserve_release
+  reference: 'FEFAC/World Grain 2022: Futtermittelpreise +31-50%, Spitzenwerte höher'
+- id: livestock_pressure
+  name: Druck auf Tierproduktion
+  type: market_shock
+  trigger:
+    target: poultry_farms
+    condition: feed_price_spike.active
+  impact:
+    supply: -9%
+    price: +20%
+    duration: 240d
+  causes:
+  - consumer_price_increase
+  - feed_demand_reduction
+  reference: 'Destatis 2022: Fleischproduktion -8,1% (Schwein -9,6%, Geflügel -2,9%)'
+- id: gas_price_spike
+  name: Gaspreis-Explosion
+  type: market_shock
+  trigger:
+    target: gas_supply
+    probability: 0.2
+  impact:
+    price: +200%
+    duration: 180d
+  causes:
+  - ammonia_halt
+  - oil_mill_slowdown
+  reference: Gaskrise 2022
+- id: ammonia_halt
+  name: Ammoniak-Produktionsstopp
+  type: infrastructure_failure
+  trigger:
+    target: fertilizer_supply
+    condition: gas_price_spike.active
+  impact:
+    supply: -70%
+    duration: 90d
+  causes:
+  - fertilizer_demand_spike
+  reference: BASF/Yara Produktionsstopps 2022
+- id: oil_mill_slowdown
+  name: Ölmühlen-Drosselung
+  type: infrastructure_failure
+  trigger:
+    target: eu_oil_mills
+    condition: gas_price_spike.active
+  impact:
+    supply: -30%
+    duration: 60d
+  causes:
+  - soy_oil_shortage
+  - feed_price_spike
+  reference: 'Geschätzt: Gaspreisbedingte Drosselung EU-Ölmühlen 2022 (ADM/Cargill)'
+- id: fertilizer_demand_spike
+  name: Düngemittel-Nachfragespitze
+  type: market_shock
+  trigger:
+    target: fertilizer_supply
+    condition: brazil_drought.active
+  impact:
+    demand: +40%
+    price: +80%
+    duration: 120d
+- id: consumer_price_increase
+  name: Verbraucherpreis-Erhöhung
+  type: market_shock
+  trigger:
+    target: consumers
+    condition: livestock_pressure.active
+  impact:
+    price: +18%
+    duration: 240d
+  causes:
+  - consumer_substitution
+  reference: 'Destatis: Nahrungsmittelpreise 2022 +13,4%, Fleisch +15-20%'
+- id: alternative_protein_activation
+  name: Alternative Proteinquellen aktiviert
+  type: market_shock
+  trigger:
+    target: alternative_protein_sources
+    condition: feed_price_spike.active
+  impact:
+    supply: +8%
+    price: +30%
+    duration: 120d
+  substitution_ref: sub_protein_replacement
+  reference: Rapsschrot/Sonnenblumenschrot-Substitution bei Sojapreisschocks, ~20% Potenzial
+- id: reserve_release
+  name: Industrielle Lagerbestände freigegeben
+  type: market_shock
+  trigger:
+    target: strategic_feed_reserves
+    condition: feed_price_spike.active
+  impact:
+    supply: +12%
+    duration: 45d
+  substitution_ref: sub_strategic_reserves
+  reference: Futtermittellager bei Ölmühlen und Mischfutterherstellern ~30-45 Tage Reichweite
+- id: port_route_shift
+  name: Umleitung auf Alternativhäfen
+  type: infrastructure_failure
+  trigger:
+    target: paranagua_port
+    condition: port_congestion.active
+  impact:
+    supply: -5%
+    duration: 30d
+  substitution_ref: sub_route_paranagua
+  reference: Verlagerung Santos → Paranaguá/Hamburg bei Hafenstau
+- id: argentina_supply_increase
+  name: Argentinien erhöht Sojaexporte
+  type: market_shock
+  trigger:
+    target: argentina_farms
+    condition: soy_export_reduction.active
+  impact:
+    supply: +10%
+    price: +15%
+    duration: 90d
+  substitution_ref: sub_supplier_argentina
+  reference: Argentinien kompensiert teilweise bei Brasilienausfällen (außer bei eigener Dürre)
+- id: us_supply_activated
+  name: US-Soja-Notlieferungen aktiviert
+  type: market_shock
+  trigger:
+    target: us_farms
+    condition: soy_export_reduction.active AND soy_export_reduction.duration > 30d
+  impact:
+    supply: +15%
+    price: +25%
+    duration: 120d
+  substitution_ref: sub_supplier_usa
+  reference: USA größter Soja-Exporteur, Umleitung über Golfhäfen nach EU möglich
+- id: soy_oil_shortage
+  name: Sojaöl-Engpass
+  type: market_shock
+  trigger:
+    target: soy_oil_market
+    condition: oil_mill_slowdown.active OR soy_export_reduction.active
+  impact:
+    supply: -25%
+    price: +60%
+    duration: 90d
+  causes:
+  - consumer_price_increase
+  reference: 'Speiseölkrise 2022: Sojaöl +85%, Nebenprodukt der Ölmühlen'
+- id: consumer_substitution
+  name: Verbraucher-Substitutionseffekt
+  type: market_shock
+  trigger:
+    target: food_retail
+    condition: consumer_price_increase.active
+  impact:
+    demand: -8%
+    duration: 180d
+  causes:
+  - feed_demand_reduction
+  substitution_ref: sub_consumer_plant_based
+  reference: 'Fleischkonsum DE 2022: -4,2% (DGE), Substitution zu pflanzlichen Alternativen'
+- id: feed_demand_reduction
+  name: Reduzierte Futtermittelnachfrage
+  type: market_shock
+  trigger:
+    target: feed_mills
+    condition: livestock_pressure.active AND consumer_substitution.active
+  impact:
+    demand: -12%
+    duration: 120d
+  reference: Bestandsabbau und Substitution senken Futternachfrage langfristig
+- id: gta_arg_exportlicensingrequirement_1001
+  name: 'GTA: ARG ExportLicensingRequirement (Wheat)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1001'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportquota_1001
+  name: 'GTA: ARG ExportQuota (Wheat)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -15%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1001'
+    intervention_type: ExportQuota
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportlicensingrequirement_1003
+  name: 'GTA: ARG ExportLicensingRequirement (HS-1003)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1003'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportquota_1003
+  name: 'GTA: ARG ExportQuota (HS-1003)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -15%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1003'
+    intervention_type: ExportQuota
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportlicensingrequirement_1005
+  name: 'GTA: ARG ExportLicensingRequirement (Maize)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1005'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportquota_1005
+  name: 'GTA: ARG ExportQuota (Maize)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.5
+  impact:
+    supply: -15%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1005'
+    intervention_type: ExportQuota
+    direction: export
+    p_red_per_year: 0.5
+    extracted: '2026-03-01'
+- id: gta_arg_exporttax_1006
+  name: 'GTA: ARG ExportTax (HS-1006)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -10%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1006'
+    intervention_type: ExportTax
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportlicensingrequirement_1007
+  name: 'GTA: ARG ExportLicensingRequirement (HS-1007)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1007'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportquota_1007
+  name: 'GTA: ARG ExportQuota (HS-1007)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -15%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1007'
+    intervention_type: ExportQuota
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exporttax_1202
+  name: 'GTA: ARG ExportTax (Peanuts)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.5
+  impact:
+    supply: -10%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1202'
+    intervention_type: ExportTax
+    direction: export
+    p_red_per_year: 0.5
+    extracted: '2026-03-01'
+- id: gta_arg_exportlicensingrequirement_1206
+  name: 'GTA: ARG ExportLicensingRequirement (Sunflower seeds)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1206'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportquota_1206
+  name: 'GTA: ARG ExportQuota (Sunflower seeds)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -15%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1206'
+    intervention_type: ExportQuota
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exporttax_1208
+  name: 'GTA: ARG ExportTax (HS-1208)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -10%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1208'
+    intervention_type: ExportTax
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportlicensingrequirement_1507
+  name: 'GTA: ARG ExportLicensingRequirement (Soybean oil)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1507'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exporttax_1507
+  name: 'GTA: ARG ExportTax (Soybean oil)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -10%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1507'
+    intervention_type: ExportTax
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_importtariff_1509
+  name: 'GTA: ARG ImportTariff (HS-1509)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: +5%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1509'
+    intervention_type: ImportTariff
+    direction: import
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportlicensingrequirement_1512
+  name: 'GTA: ARG ExportLicensingRequirement (Sunflower oil)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1512'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportquota_1512
+  name: 'GTA: ARG ExportQuota (Sunflower oil)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -15%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1512'
+    intervention_type: ExportQuota
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exporttax_1517
+  name: 'GTA: ARG ExportTax (HS-1517)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -10%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1517'
+    intervention_type: ExportTax
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exporttax_1518
+  name: 'GTA: ARG ExportTax (HS-1518)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -10%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '1518'
+    intervention_type: ExportTax
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exporttax_2302
+  name: 'GTA: ARG ExportTax (HS-2302)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -10%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '2302'
+    intervention_type: ExportTax
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportlicensingrequirement_2304
+  name: 'GTA: ARG ExportLicensingRequirement (Soy meal (Sojaschrot))'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '2304'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exporttax_2304
+  name: 'GTA: ARG ExportTax (Soy meal (Sojaschrot))'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -10%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '2304'
+    intervention_type: ExportTax
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportlicensingrequirement_2306
+  name: 'GTA: ARG ExportLicensingRequirement (Oil-cake residues)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '2306'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exportquota_2306
+  name: 'GTA: ARG ExportQuota (Oil-cake residues)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -15%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '2306'
+    intervention_type: ExportQuota
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exporttax_2308
+  name: 'GTA: ARG ExportTax (HS-2308)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -10%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '2308'
+    intervention_type: ExportTax
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_exporttax_2309
+  name: 'GTA: ARG ExportTax (HS-2309)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -10%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '2309'
+    intervention_type: ExportTax
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_arg_importlicensingrequirement_2309
+  name: 'GTA: ARG ImportLicensingRequirement (HS-2309)'
+  type: regulatory
+  trigger:
+    target: argentina_farms
+    probability: 0.25
+  impact:
+    supply: -5%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: ARG
+    hs4: '2309'
+    intervention_type: ImportLicensingRequirement
+    direction: import
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_usa_exportlicensingrequirement_1006
+  name: 'GTA: USA ExportLicensingRequirement (HS-1006)'
+  type: regulatory
+  trigger:
+    target: us_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: USA
+    hs4: '1006'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_usa_importtariff_1008
+  name: 'GTA: USA ImportTariff (HS-1008)'
+  type: regulatory
+  trigger:
+    target: us_farms
+    probability: 0.25
+  impact:
+    supply: +5%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: USA
+    hs4: '1008'
+    intervention_type: ImportTariff
+    direction: import
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_usa_importtariff_1201
+  name: 'GTA: USA ImportTariff (Soybeans)'
+  type: regulatory
+  trigger:
+    target: us_farms
+    probability: 0.25
+  impact:
+    supply: +5%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: USA
+    hs4: '1201'
+    intervention_type: ImportTariff
+    direction: import
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_usa_importtariff_1204
+  name: 'GTA: USA ImportTariff (Linseed)'
+  type: regulatory
+  trigger:
+    target: us_farms
+    probability: 0.25
+  impact:
+    supply: +5%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: USA
+    hs4: '1204'
+    intervention_type: ImportTariff
+    direction: import
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_usa_importtariff_1206
+  name: 'GTA: USA ImportTariff (Sunflower seeds)'
+  type: regulatory
+  trigger:
+    target: us_farms
+    probability: 0.25
+  impact:
+    supply: +5%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: USA
+    hs4: '1206'
+    intervention_type: ImportTariff
+    direction: import
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_usa_exportlicensingrequirement_1504
+  name: 'GTA: USA ExportLicensingRequirement (HS-1504)'
+  type: regulatory
+  trigger:
+    target: us_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: USA
+    hs4: '1504'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_usa_exportlicensingrequirement_1517
+  name: 'GTA: USA ExportLicensingRequirement (HS-1517)'
+  type: regulatory
+  trigger:
+    target: us_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: USA
+    hs4: '1517'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_usa_importtariff_2304
+  name: 'GTA: USA ImportTariff (Soy meal (Sojaschrot))'
+  type: regulatory
+  trigger:
+    target: us_farms
+    probability: 0.25
+  impact:
+    supply: +5%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: USA
+    hs4: '2304'
+    intervention_type: ImportTariff
+    direction: import
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+- id: gta_usa_exportlicensingrequirement_2309
+  name: 'GTA: USA ExportLicensingRequirement (HS-2309)'
+  type: regulatory
+  trigger:
+    target: us_farms
+    probability: 0.25
+  impact:
+    supply: -8%
+    duration: 180d
+  _kg_source:
+    origin: CoyPu KG / GTA
+    country: USA
+    hs4: '2309'
+    intervention_type: ExportLicensingRequirement
+    direction: export
+    p_red_per_year: 0.25
+    extracted: '2026-03-01'
+cascades:
+- id: santos_port_cascade
+  name: Santos-Hafen-Ausfall-Kaskade (70% Kapazität, 30% Anteil)
+  origin: santos_port_failure
+  timeline:
+  - at: 0d
+    event: santos_port_failure
+    impact:
+      sector: logistics
+      severity: critical
+    affects:
+    - santos_port
+  - at: 3d
+    event: soy_export_reduction
+    impact:
+      sector: agriculture
+      severity: high
+    affects:
+    - brazil_farms
+  - at: 3d
+    event: schrot_supply_shortage
+    impact:
+      sector: processing
+      severity: high
+    affects:
+    - feed_mills
+  - at: 3d
+    event: oil_supply_tightening
+    impact:
+      sector: food
+      severity: medium
+    affects:
+    - soy_oil_market
+    - eu_oil_mills
+  - at: 14d
+    event: feed_price_spike
+    impact:
+      sector: agriculture
+      severity: critical
+    affects:
+    - feed_mills
+  - at: 21d
+    event: alternative_protein_activation
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - alternative_protein_sources
+  - at: 30d
+    event: us_supply_activated
+    impact:
+      sector: agriculture
+      severity: medium
+    affects:
+    - us_farms
+    - us_gulf_ports
+  - at: 45d
+    event: livestock_pressure
+    impact:
+      sector: agriculture
+      severity: high
+    affects:
+    - poultry_farms
+    - pig_farms
+    - dairy_farms
+  - at: 60d
+    event: consumer_price_increase
+    impact:
+      sector: retail
+      severity: medium
+    affects:
+    - consumers
+    - food_retail
+  probability: 0.21
+  validation:
+    model: OECD ICIO 2025 + BACI HS07
+    leontief_multiplier: 1.86
+    ghosh_multiplier: 2.22
+    eu_top_impacts:
+    - 'ESP_C10T12: -261 Mio. USD'
+    - 'ESP_A01: -188 Mio. USD'
+    - 'DEU_A01: -187 Mio. USD'
+    - 'FRA_A01: -154 Mio. USD'
+    - 'DEU_C10T12: -129 Mio. USD'
+    - 'NLD_C10T12: -129 Mio. USD'
+    confidence: 0.75
+    reference: ICIO 2025 Leontief/Ghosh-Analyse, Referenzjahr 2022
+- id: soy_crisis_cascade
+  name: Soja-Krisenkaskade
+  origin: brazil_drought
+  timeline:
+  - at: 0d
+    event: brazil_drought
+    impact:
+      sector: agriculture
+      severity: critical
+  - at: 14d
+    event: soy_export_reduction
+    impact:
+      sector: logistics
+      severity: high
+    affects:
+    - santos_port
+  - at: 14d
+    event: argentina_supply_increase
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - argentina_farms
+    - rotterdam_port
+  - at: 21d
+    event: port_congestion
+    impact:
+      sector: logistics
+      severity: medium
+    affects:
+    - santos_port
+  - at: 21d
+    event: port_route_shift
+    impact:
+      sector: logistics
+      severity: low
+    affects:
+    - paranagua_port
+    - hamburg_port
+  - at: 28d
+    event: feed_price_spike
+    impact:
+      sector: agriculture
+      severity: critical
+    affects:
+    - feed_mills
+  - at: 28d
+    event: reserve_release
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - strategic_feed_reserves
+  - at: 35d
+    event: alternative_protein_activation
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - alternative_protein_sources
+  - at: 42d
+    event: livestock_pressure
+    impact:
+      sector: agriculture
+      severity: high
+    affects:
+    - poultry_farms
+    - pig_farms
+    - dairy_farms
+  - at: 45d
+    event: us_supply_activated
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - us_farms
+    - us_gulf_ports
+    - rotterdam_port
+  - at: 60d
+    event: consumer_price_increase
+    impact:
+      sector: retail
+      severity: medium
+    affects:
+    - consumers
+    - food_retail
+  - at: 75d
+    event: consumer_substitution
+    impact:
+      sector: retail
+      severity: low
+    affects:
+    - food_retail
+  - at: 90d
+    event: feed_demand_reduction
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - feed_mills
+  probability: 0.9
+  validation:
+    reference: Soja-Krise 2022
+    source: BMEL Marktberichte, FAO GIEWS
+    confidence: 0.85
+- id: energy_food_cascade
+  name: Energie-Lebensmittel-Kaskade
+  origin: gas_price_spike
+  timeline:
+  - at: 0d
+    event: gas_price_spike
+    impact:
+      sector: energy
+      severity: critical
+  - at: 7d
+    event: ammonia_halt
+    impact:
+      sector: chemistry
+      severity: critical
+  - at: 14d
+    event: oil_mill_slowdown
+    impact:
+      sector: processing
+      severity: high
+    affects:
+    - eu_oil_mills
+  - at: 18d
+    event: soy_oil_shortage
+    impact:
+      sector: food
+      severity: medium
+    affects:
+    - soy_oil_market
+  - at: 21d
+    event: feed_price_spike
+    impact:
+      sector: agriculture
+      severity: high
+    affects:
+    - feed_mills
+  - at: 21d
+    event: reserve_release
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - strategic_feed_reserves
+  - at: 28d
+    event: alternative_protein_activation
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - alternative_protein_sources
+  - at: 35d
+    event: livestock_pressure
+    impact:
+      sector: agriculture
+      severity: critical
+    affects:
+    - poultry_farms
+    - pig_farms
+    - dairy_farms
+  - at: 50d
+    event: consumer_price_increase
+    impact:
+      sector: retail
+      severity: medium
+    affects:
+    - consumers
+    - food_retail
+  - at: 65d
+    event: consumer_substitution
+    impact:
+      sector: retail
+      severity: low
+    affects:
+    - food_retail
+  probability: 0.85
+  validation:
+    reference: Gaskrise 2022
+    source: Destatis, BLE Versorgungsbilanzen
+    confidence: 0.9
+- id: compound_crisis
+  name: Kombinierte Krise
+  origin: brazil_drought
+  timeline:
+  - at: 0d
+    event: brazil_drought
+    impact:
+      sector: agriculture
+      severity: critical
+  - at: 14d
+    event: gas_price_spike
+    impact:
+      sector: energy
+      severity: critical
+  - at: 28d
+    event: soy_export_reduction
+    impact:
+      sector: logistics
+      severity: high
+    affects:
+    - santos_port
+  - at: 28d
+    event: argentina_supply_increase
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - argentina_farms
+  - at: 35d
+    event: ammonia_halt
+    impact:
+      sector: chemistry
+      severity: critical
+    affects:
+    - fertilizer_supply
+  - at: 35d
+    event: oil_mill_slowdown
+    impact:
+      sector: processing
+      severity: high
+    affects:
+    - eu_oil_mills
+  - at: 38d
+    event: soy_oil_shortage
+    impact:
+      sector: food
+      severity: high
+    affects:
+    - soy_oil_market
+  - at: 42d
+    event: feed_price_spike
+    impact:
+      sector: agriculture
+      severity: critical
+    affects:
+    - feed_mills
+  - at: 42d
+    event: reserve_release
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - strategic_feed_reserves
+  - at: 45d
+    event: alternative_protein_activation
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - alternative_protein_sources
+  - at: 56d
+    event: livestock_pressure
+    impact:
+      sector: agriculture
+      severity: critical
+    affects:
+    - poultry_farms
+    - pig_farms
+    - dairy_farms
+  - at: 60d
+    event: us_supply_activated
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - us_farms
+    - us_gulf_ports
+  - at: 70d
+    event: consumer_price_increase
+    impact:
+      sector: retail
+      severity: high
+    affects:
+    - consumers
+    - food_retail
+  - at: 85d
+    event: consumer_substitution
+    impact:
+      sector: retail
+      severity: medium
+    affects:
+    - food_retail
+  - at: 100d
+    event: feed_demand_reduction
+    impact:
+      sector: agriculture
+      severity: low
+    affects:
+    - feed_mills
+  probability: 0.3
+  validation:
+    reference: Hypothetische Kombination basierend auf 2022-Ereignissen
+    confidence: 0.6
+_kg_enrichment:
+  source_csv: /Users/aschaefer/baci_gta_kg.csv
+  enriched_at: '2026-03-01'
+  description: Entity.extra mit BACI-Handelsvolumina (2021) angereichert. Substitution.coverage aus BACI-Volumenquotienten
+    berechnet. GTA-Events mit empirischen Eintrittswahrscheinlichkeiten (Red-Bewertungen) ergänzt.
+_icio_enrichment:
+  generated_at: '2026-03-27'
+  icio_edition: OECD ICIO 2025
+  baci_version: BACI_HS07_V202601
+  reference_year: 2022
+  pipeline: baci-icio-merge v1.0
+  scenario_parameters:
+    santos_share: 0.3
+    shock_severity: 0.7
+    substitution_rate_assumed: 0.25
+  soja_chain:
+    total_bra_exports_musd: 62506.3
+    total_santos_shock_musd: 13126.3
+    products:
+      '120100':
+        label: Sojabohnen
+        bra_exports_musd: 48360.2
+        santos_shock_musd: 10155.6
+        leontief_effect_musd: -19103.9
+        bra_icio_sector: BRA_A01
+      '230400':
+        label: Sojaschrot
+        bra_exports_musd: 10220.8
+        santos_shock_musd: 2146.4
+        leontief_effect_musd: -3674.6
+        bra_icio_sector: BRA_C10T12
+      '150710':
+        label: Rohsojaöl
+        bra_exports_musd: 3547.6
+        santos_shock_musd: 745.0
+        leontief_effect_musd: -1437.7
+        bra_icio_sector: BRA_C10T12
+      '150790':
+        label: Raffin. Sojaöl
+        bra_exports_musd: 367.5
+        santos_shock_musd: 77.2
+        leontief_effect_musd: -134.5
+        bra_icio_sector: BRA_C10T12
+      '120810':
+        label: Sojamehl
+        bra_exports_musd: 10.2
+        santos_shock_musd: 2.1
+        leontief_effect_musd: -4.1
+        bra_icio_sector: BRA_C10T12
+  model_results:
+    leontief:
+      description: Backward linkages — Nachfrageseite
+      total_effect_musd: -24354.8
+      total_no_subst_musd: -32473.1
+      subst_saving_musd: -8118.3
+      multiplier: 2.47
+      n_affected: 3927
+      eu_top_10:
+      - country_sector: ESP_C10T12
+        country: ESP
+        sector: C10T12
+        delta_x_musd: -261.31
+      - country_sector: ESP_A01
+        country: ESP
+        sector: A01
+        delta_x_musd: -188.09
+      - country_sector: DEU_A01
+        country: DEU
+        sector: A01
+        delta_x_musd: -186.73
+      - country_sector: FRA_A01
+        country: FRA
+        sector: A01
+        delta_x_musd: -154.02
+      - country_sector: DEU_C10T12
+        country: DEU
+        sector: C10T12
+        delta_x_musd: -129.06
+      - country_sector: NLD_C10T12
+        country: NLD
+        sector: C10T12
+        delta_x_musd: -128.76
+      - country_sector: ITA_C10T12
+        country: ITA
+        sector: C10T12
+        delta_x_musd: -105.51
+      - country_sector: NLD_A01
+        country: NLD
+        sector: A01
+        delta_x_musd: -76.43
+      - country_sector: ESP_G
+        country: ESP
+        sector: G
+        delta_x_musd: -68.97
+      - country_sector: FRA_C10T12
+        country: FRA
+        sector: C10T12
+        delta_x_musd: -68.06
+    ghosh:
+      description: Forward linkages — Angebotsseite
+      total_effect_musd: -29086.8
+      multiplier: 2.22
+      n_affected: 3928
+      top_non_bra_10:
+      - country_sector: CHN_C10T12
+        country: CHN
+        sector: C10T12
+        delta_x_musd: -1183.72
+      - country_sector: CHN_A01
+        country: CHN
+        sector: A01
+        delta_x_musd: -892.34
+      - country_sector: CHN_C13T15
+        country: CHN
+        sector: C13T15
+        delta_x_musd: -253.03
+      - country_sector: CHN_I
+        country: CHN
+        sector: I
+        delta_x_musd: -252.22
+      - country_sector: CHN_F
+        country: CHN
+        sector: F
+        delta_x_musd: -155.52
+      - country_sector: CHN_C20
+        country: CHN
+        sector: C20
+        delta_x_musd: -134.41
+      - country_sector: CHN_G
+        country: CHN
+        sector: G
+        delta_x_musd: -117.45
+      - country_sector: ESP_C10T12
+        country: ESP
+        sector: C10T12
+        delta_x_musd: -97.38
+      - country_sector: VNM_A01
+        country: VNM
+        sector: A01
+        delta_x_musd: -86.11
+      - country_sector: DEU_C10T12
+        country: DEU
+        sector: C10T12
+        delta_x_musd: -81.94
+  substitution_critical:
+    hs230400_schrot:
+      DEU:
+        ausfall_musd: 177.8
+        alt_cap_musd: 34.7
+        coverage: 0.195
+        risk_level: KRITISCH
+      THA:
+        ausfall_musd: 294.5
+        alt_cap_musd: 68.5
+        coverage: 0.233
+        risk_level: KRITISCH
+      NLD:
+        ausfall_musd: 184.5
+        alt_cap_musd: 231.8
+        coverage: 1.0
+        risk_level: niedrig
+  simulation_hints:
+    recommended_shock_vector: delta_v[BRA_A01] + delta_v[BRA_C10T12]
+    leontief_multiplier_bra_a01: 2.09
+    ghosh_multiplier_bra_a01: 2.37
+    ghosh_multiplier_bra_c10t12: 1.69
+    priority_monitoring_sectors:
+    - DEU_A01
+    - DEU_C10T12
+    - NLD_A01
+    - ESP_C10T12
+    - FRA_A01
+    note: 'Ghosh-Multiplikator BRA_A01 (2.37) > Leontief (2.09): vorwärts stärker vernetzt als rückwärts
+      — Santos-Schock propagiert stärker downstream als upstream.'
+  glm_substitution_analysis:
+    source: GLM 06_substitution.py
+    year: 2022
+    target_product: '230400'
+    target_country: DEU
+    combined_matrix:
+      shortfall_musd: 214.9
+      supplier_substitution_musd: 214.9
+      product_substitution_musd: 0.0
+      vertical_substitution_musd: 0.0
+      coverage_ratio: 1.0
+      remaining_gap_musd: 0.0
+    product_substitutes:
+    - hs6: '230110'
+      name: Fleisch-/Knochenmehl
+      protein_factor: 1.14
+      cosine_similarity: 0.753
+      deu_import_musd: 147.0
+    - hs6: '230120'
+      name: Fischmehl
+      protein_factor: 1.48
+      cosine_similarity: 0.199
+      deu_import_musd: 174.1
+    - hs6: '230610'
+      name: Baumwollsaatschrot
+      protein_factor: 0.93
+      cosine_similarity: 0.676
+      deu_import_musd: 1.5
+    - hs6: '230630'
+      name: Sonnenblumenschrot
+      protein_factor: 0.77
+      cosine_similarity: 0.311
+      deu_import_musd: 182.5
+    - hs6: '230641'
+      name: Rapsschrot (00-Qualitaet)
+      protein_factor: 0.79
+      cosine_similarity: 0.146
+      deu_import_musd: 188.8
+    - hs6: '230649'
+      name: Rapsschrot (sonstig)
+      protein_factor: 0.75
+      cosine_similarity: 0.414
+      deu_import_musd: 25.8
+    - hs6: '230620'
+      name: Leinsaatschrot
+      protein_factor: 0.77
+      cosine_similarity: 0.286
+      deu_import_musd: 2.2
+    - hs6: '230690'
+      name: Oelkuchen, sonstige
+      protein_factor: 0.68
+      cosine_similarity: 0.162
+      deu_import_musd: 7.7
+    - hs6: '230660'
+      name: Palmkernschrot
+      protein_factor: 0.39
+      cosine_similarity: 0.209
+      deu_import_musd: 44.5
+    vertical_substitution:
+      beans_needed_musd: 275.5
+      meal_yield_factor: 0.78
+      tech_coeff_c10_a01: 0.040105
+      top_bean_suppliers:
+      - exporter: USA
+        headroom_musd: 32543.1
+      - exporter: UKR
+        headroom_musd: 854.6
+      - exporter: AUT
+        headroom_musd: 44.3
+      - exporter: POL
+        headroom_musd: 34.9
+      - exporter: NLD
+        headroom_musd: 178.1
+    defender_action_space:
+      description: Drei orthogonale Substitutionsstrategien fuer den Defender-Agenten. Jede Aktion hat
+        ramp_up (Tage bis Wirksamkeit), cost_delta (Preisaufschlag) und coverage (maximale Deckungsquote).
+      actions:
+      - type: switch_supplier
+        ramp_up_d: 30
+        cost_delta: 0.2
+        max_coverage: 1.0
+      - type: switch_product
+        ramp_up_d: 60
+        cost_delta: 0.15
+        max_coverage: 0.0
+        n_products: 9
+      - type: vertical_integrate
+        ramp_up_d: 90
+        cost_delta: 0.25
+        max_coverage: 0.0

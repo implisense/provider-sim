@@ -1,0 +1,217 @@
+uid: provider-water_treatment_disruption-arl-dummy
+seed: 42
+version: 3.4.1
+schedule:
+- phase_train:
+    environments:
+    - environment:
+        name: provider_sim.env.environment:ProviderEnvironment
+        uid: provider_env
+        params:
+          pdl_source: /Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/palestrai_simulation/experiments/s5-wasseraufbereitung.pdl.yaml
+          max_ticks: 365
+      reward:
+        name: palaestrai.agent.dummy_objective:DummyObjective
+        params:
+          params: {}
+    agents:
+    - name: attacker
+      brain:
+        name: palaestrai.agent.dummy_brain:DummyBrain
+        params: {}
+      muscle:
+        name: palaestrai.agent.dummy_muscle:DummyMuscle
+        params: {}
+      objective:
+        name: provider_sim.env.objectives:AttackerObjective
+        params:
+          reward_id: reward.attacker
+      sensors: &id001
+      - provider_env.entity.electricity_grid.supply
+      - provider_env.entity.electricity_grid.demand
+      - provider_env.entity.electricity_grid.price
+      - provider_env.entity.electricity_grid.health
+      - provider_env.entity.basf_ludwigshafen.supply
+      - provider_env.entity.basf_ludwigshafen.demand
+      - provider_env.entity.basf_ludwigshafen.price
+      - provider_env.entity.basf_ludwigshafen.health
+      - provider_env.entity.covestro_leverkusen.supply
+      - provider_env.entity.covestro_leverkusen.demand
+      - provider_env.entity.covestro_leverkusen.price
+      - provider_env.entity.covestro_leverkusen.health
+      - provider_env.entity.evonik_marl.supply
+      - provider_env.entity.evonik_marl.demand
+      - provider_env.entity.evonik_marl.price
+      - provider_env.entity.evonik_marl.health
+      - provider_env.entity.dow_stade.supply
+      - provider_env.entity.dow_stade.demand
+      - provider_env.entity.dow_stade.price
+      - provider_env.entity.dow_stade.health
+      - provider_env.entity.vinnolit_gendorf.supply
+      - provider_env.entity.vinnolit_gendorf.demand
+      - provider_env.entity.vinnolit_gendorf.price
+      - provider_env.entity.vinnolit_gendorf.health
+      - provider_env.entity.inovyn_rheinberg.supply
+      - provider_env.entity.inovyn_rheinberg.demand
+      - provider_env.entity.inovyn_rheinberg.price
+      - provider_env.entity.inovyn_rheinberg.health
+      - provider_env.entity.chlorine_supply.supply
+      - provider_env.entity.chlorine_supply.demand
+      - provider_env.entity.chlorine_supply.price
+      - provider_env.entity.chlorine_supply.health
+      - provider_env.entity.sodium_hydroxide_supply.supply
+      - provider_env.entity.sodium_hydroxide_supply.demand
+      - provider_env.entity.sodium_hydroxide_supply.price
+      - provider_env.entity.sodium_hydroxide_supply.health
+      - provider_env.entity.small_rural_utilities.supply
+      - provider_env.entity.small_rural_utilities.demand
+      - provider_env.entity.small_rural_utilities.price
+      - provider_env.entity.small_rural_utilities.health
+      - provider_env.entity.small_urban_utilities.supply
+      - provider_env.entity.small_urban_utilities.demand
+      - provider_env.entity.small_urban_utilities.price
+      - provider_env.entity.small_urban_utilities.health
+      - provider_env.entity.medium_utilities.supply
+      - provider_env.entity.medium_utilities.demand
+      - provider_env.entity.medium_utilities.price
+      - provider_env.entity.medium_utilities.health
+      - provider_env.entity.large_utilities.supply
+      - provider_env.entity.large_utilities.demand
+      - provider_env.entity.large_utilities.price
+      - provider_env.entity.large_utilities.health
+      - provider_env.entity.hospitals.supply
+      - provider_env.entity.hospitals.demand
+      - provider_env.entity.hospitals.price
+      - provider_env.entity.hospitals.health
+      - provider_env.entity.food_industry.supply
+      - provider_env.entity.food_industry.demand
+      - provider_env.entity.food_industry.price
+      - provider_env.entity.food_industry.health
+      - provider_env.entity.pharma_industry.supply
+      - provider_env.entity.pharma_industry.demand
+      - provider_env.entity.pharma_industry.price
+      - provider_env.entity.pharma_industry.health
+      - provider_env.entity.paper_industry.supply
+      - provider_env.entity.paper_industry.demand
+      - provider_env.entity.paper_industry.price
+      - provider_env.entity.paper_industry.health
+      - provider_env.entity.population_rural.supply
+      - provider_env.entity.population_rural.demand
+      - provider_env.entity.population_rural.price
+      - provider_env.entity.population_rural.health
+      - provider_env.entity.population_urban.supply
+      - provider_env.entity.population_urban.demand
+      - provider_env.entity.population_urban.price
+      - provider_env.entity.population_urban.health
+      - provider_env.entity.chlorine_import_eu.supply
+      - provider_env.entity.chlorine_import_eu.demand
+      - provider_env.entity.chlorine_import_eu.price
+      - provider_env.entity.chlorine_import_eu.health
+      - provider_env.entity.thw_water_emergency.supply
+      - provider_env.entity.thw_water_emergency.demand
+      - provider_env.entity.thw_water_emergency.price
+      - provider_env.entity.thw_water_emergency.health
+      - provider_env.entity.dialysis_centers.supply
+      - provider_env.entity.dialysis_centers.demand
+      - provider_env.entity.dialysis_centers.price
+      - provider_env.entity.dialysis_centers.health
+      - provider_env.entity.hygiene_products.supply
+      - provider_env.entity.hygiene_products.demand
+      - provider_env.entity.hygiene_products.price
+      - provider_env.entity.hygiene_products.health
+      - provider_env.event.electricity_price_spike.active
+      - provider_env.event.chlorine_production_halt.active
+      - provider_env.event.chlorine_delivery_stop.active
+      - provider_env.event.small_utility_shortage.active
+      - provider_env.event.medium_utility_shortage.active
+      - provider_env.event.disinfection_stopped.active
+      - provider_env.event.boil_water_advisory.active
+      - provider_env.event.water_contamination.active
+      - provider_env.event.gastrointestinal_outbreak.active
+      - provider_env.event.hospital_capacity_strain.active
+      - provider_env.event.food_production_halt.active
+      - provider_env.event.pharma_production_halt.active
+      - provider_env.event.sodium_hydroxide_shortage.active
+      - provider_env.event.paper_production_halt.active
+      - provider_env.event.chlorine_import_activated.active
+      - provider_env.event.emergency_water_activation.active
+      - provider_env.event.small_urban_utility_shortage.active
+      - provider_env.event.large_utility_shortage.active
+      - provider_env.event.water_workforce_shortage.active
+      - provider_env.event.medication_shortage.active
+      - provider_env.event.hygiene_product_shortage.active
+      - provider_env.event.dialysis_emergency.active
+      - provider_env.sim.tick
+      actuators:
+      - provider_env.attacker.electricity_grid
+      - provider_env.attacker.basf_ludwigshafen
+      - provider_env.attacker.covestro_leverkusen
+      - provider_env.attacker.evonik_marl
+      - provider_env.attacker.dow_stade
+      - provider_env.attacker.vinnolit_gendorf
+      - provider_env.attacker.inovyn_rheinberg
+      - provider_env.attacker.chlorine_supply
+      - provider_env.attacker.sodium_hydroxide_supply
+      - provider_env.attacker.small_rural_utilities
+      - provider_env.attacker.small_urban_utilities
+      - provider_env.attacker.medium_utilities
+      - provider_env.attacker.large_utilities
+      - provider_env.attacker.hospitals
+      - provider_env.attacker.food_industry
+      - provider_env.attacker.pharma_industry
+      - provider_env.attacker.paper_industry
+      - provider_env.attacker.population_rural
+      - provider_env.attacker.population_urban
+      - provider_env.attacker.chlorine_import_eu
+      - provider_env.attacker.thw_water_emergency
+      - provider_env.attacker.dialysis_centers
+      - provider_env.attacker.hygiene_products
+    - name: defender
+      brain:
+        name: palaestrai.agent.dummy_brain:DummyBrain
+        params: {}
+      muscle:
+        name: palaestrai.agent.dummy_muscle:DummyMuscle
+        params: {}
+      objective:
+        name: provider_sim.env.objectives:DefenderObjective
+        params:
+          reward_id: reward.defender
+      sensors: *id001
+      actuators:
+      - provider_env.defender.electricity_grid
+      - provider_env.defender.basf_ludwigshafen
+      - provider_env.defender.covestro_leverkusen
+      - provider_env.defender.evonik_marl
+      - provider_env.defender.dow_stade
+      - provider_env.defender.vinnolit_gendorf
+      - provider_env.defender.inovyn_rheinberg
+      - provider_env.defender.chlorine_supply
+      - provider_env.defender.sodium_hydroxide_supply
+      - provider_env.defender.small_rural_utilities
+      - provider_env.defender.small_urban_utilities
+      - provider_env.defender.medium_utilities
+      - provider_env.defender.large_utilities
+      - provider_env.defender.hospitals
+      - provider_env.defender.food_industry
+      - provider_env.defender.pharma_industry
+      - provider_env.defender.paper_industry
+      - provider_env.defender.population_rural
+      - provider_env.defender.population_urban
+      - provider_env.defender.chlorine_import_eu
+      - provider_env.defender.thw_water_emergency
+      - provider_env.defender.dialysis_centers
+      - provider_env.defender.hygiene_products
+    simulation:
+      name: palaestrai.simulation.vanilla_sim_controller:VanillaSimController
+      conditions:
+      - name: palaestrai.simulation.vanilla_simcontroller_termination_condition:VanillaSimControllerTerminationCondition
+        params: {}
+    phase_config:
+      mode: train
+      worker: 1
+      episodes: 1
+run_config:
+  condition:
+    name: palaestrai.experiment.vanilla_rungovernor_termination_condition:VanillaRunGovernorTerminationCondition
+    params: {}

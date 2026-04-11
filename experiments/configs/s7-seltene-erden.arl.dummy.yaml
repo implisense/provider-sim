@@ -1,0 +1,200 @@
+uid: provider-rare_earth_supply_disruption-arl-dummy
+seed: 42
+version: 3.4.1
+schedule:
+- phase_train:
+    environments:
+    - environment:
+        name: provider_sim.env.environment:ProviderEnvironment
+        uid: provider_env
+        params:
+          pdl_source: /Users/aschaefer/Projekte/Forschung/PROVIDER/04_Apps/pdl-ontology-web-viewer/scenarios/s7-seltene-erden.pdl.yaml
+          max_ticks: 365
+      reward:
+        name: palaestrai.agent.dummy_objective:DummyObjective
+        params:
+          params: {}
+    agents:
+    - name: attacker
+      brain:
+        name: palaestrai.agent.dummy_brain:DummyBrain
+        params: {}
+      muscle:
+        name: palaestrai.agent.dummy_muscle:DummyMuscle
+        params: {}
+      objective:
+        name: provider_sim.env.objectives:AttackerObjective
+        params:
+          reward_id: reward.attacker
+      sensors: &id001
+      - provider_env.entity.china_rare_earth_mines.supply
+      - provider_env.entity.china_rare_earth_mines.demand
+      - provider_env.entity.china_rare_earth_mines.price
+      - provider_env.entity.china_rare_earth_mines.health
+      - provider_env.entity.myanmar_rare_earth_mines.supply
+      - provider_env.entity.myanmar_rare_earth_mines.demand
+      - provider_env.entity.myanmar_rare_earth_mines.price
+      - provider_env.entity.myanmar_rare_earth_mines.health
+      - provider_env.entity.australia_rare_earth_mines.supply
+      - provider_env.entity.australia_rare_earth_mines.demand
+      - provider_env.entity.australia_rare_earth_mines.price
+      - provider_env.entity.australia_rare_earth_mines.health
+      - provider_env.entity.china_separation_plants.supply
+      - provider_env.entity.china_separation_plants.demand
+      - provider_env.entity.china_separation_plants.price
+      - provider_env.entity.china_separation_plants.health
+      - provider_env.entity.lynas_malaysia.supply
+      - provider_env.entity.lynas_malaysia.demand
+      - provider_env.entity.lynas_malaysia.price
+      - provider_env.entity.lynas_malaysia.health
+      - provider_env.entity.mp_materials_usa.supply
+      - provider_env.entity.mp_materials_usa.demand
+      - provider_env.entity.mp_materials_usa.price
+      - provider_env.entity.mp_materials_usa.health
+      - provider_env.entity.ndfeb_magnet_producers.supply
+      - provider_env.entity.ndfeb_magnet_producers.demand
+      - provider_env.entity.ndfeb_magnet_producers.price
+      - provider_env.entity.ndfeb_magnet_producers.health
+      - provider_env.entity.ev_motor_producers_de.supply
+      - provider_env.entity.ev_motor_producers_de.demand
+      - provider_env.entity.ev_motor_producers_de.price
+      - provider_env.entity.ev_motor_producers_de.health
+      - provider_env.entity.wind_turbine_producers.supply
+      - provider_env.entity.wind_turbine_producers.demand
+      - provider_env.entity.wind_turbine_producers.price
+      - provider_env.entity.wind_turbine_producers.health
+      - provider_env.entity.mri_producers.supply
+      - provider_env.entity.mri_producers.demand
+      - provider_env.entity.mri_producers.price
+      - provider_env.entity.mri_producers.health
+      - provider_env.entity.defense_industry_de.supply
+      - provider_env.entity.defense_industry_de.demand
+      - provider_env.entity.defense_industry_de.price
+      - provider_env.entity.defense_industry_de.health
+      - provider_env.entity.automotive_oem_de.supply
+      - provider_env.entity.automotive_oem_de.demand
+      - provider_env.entity.automotive_oem_de.price
+      - provider_env.entity.automotive_oem_de.health
+      - provider_env.entity.katalysatoren_produktion.supply
+      - provider_env.entity.katalysatoren_produktion.demand
+      - provider_env.entity.katalysatoren_produktion.price
+      - provider_env.entity.katalysatoren_produktion.health
+      - provider_env.entity.energiewende_wind.supply
+      - provider_env.entity.energiewende_wind.demand
+      - provider_env.entity.energiewende_wind.price
+      - provider_env.entity.energiewende_wind.health
+      - provider_env.entity.ev_market_de.supply
+      - provider_env.entity.ev_market_de.demand
+      - provider_env.entity.ev_market_de.price
+      - provider_env.entity.ev_market_de.health
+      - provider_env.entity.patients_diagnostic.supply
+      - provider_env.entity.patients_diagnostic.demand
+      - provider_env.entity.patients_diagnostic.price
+      - provider_env.entity.patients_diagnostic.health
+      - provider_env.entity.bundeswehr_readiness.supply
+      - provider_env.entity.bundeswehr_readiness.demand
+      - provider_env.entity.bundeswehr_readiness.price
+      - provider_env.entity.bundeswehr_readiness.health
+      - provider_env.entity.recycling_infrastructure.supply
+      - provider_env.entity.recycling_infrastructure.demand
+      - provider_env.entity.recycling_infrastructure.price
+      - provider_env.entity.recycling_infrastructure.health
+      - provider_env.entity.alternative_magnet_tech.supply
+      - provider_env.entity.alternative_magnet_tech.demand
+      - provider_env.entity.alternative_magnet_tech.price
+      - provider_env.entity.alternative_magnet_tech.health
+      - provider_env.entity.eu_crma.supply
+      - provider_env.entity.eu_crma.demand
+      - provider_env.entity.eu_crma.price
+      - provider_env.entity.eu_crma.health
+      - provider_env.event.china_export_restriction.active
+      - provider_env.event.myanmar_mine_closure.active
+      - provider_env.event.separation_bottleneck.active
+      - provider_env.event.ndfeb_magnet_shortage.active
+      - provider_env.event.magnet_price_spike.active
+      - provider_env.event.ev_motor_shortage.active
+      - provider_env.event.ev_production_cut.active
+      - provider_env.event.ev_price_increase.active
+      - provider_env.event.ice_demand_surge.active
+      - provider_env.event.wind_turbine_delay.active
+      - provider_env.event.energiewende_slowdown.active
+      - provider_env.event.emission_targets_missed.active
+      - provider_env.event.mri_production_halt.active
+      - provider_env.event.mri_waiting_times.active
+      - provider_env.event.defense_component_shortage.active
+      - provider_env.event.bundeswehr_readiness_reduction.active
+      - provider_env.event.katalysator_engpass.active
+      - provider_env.event.demand_destruction.active
+      - provider_env.event.mining_investment_collapse.active
+      - provider_env.event.alternative_sourcing_activated.active
+      - provider_env.event.alternative_motor_development.active
+      - provider_env.event.recycling_rampup.active
+      - provider_env.event.eu_crma_acceleration.active
+      - provider_env.sim.tick
+      actuators:
+      - provider_env.attacker.china_rare_earth_mines
+      - provider_env.attacker.myanmar_rare_earth_mines
+      - provider_env.attacker.australia_rare_earth_mines
+      - provider_env.attacker.china_separation_plants
+      - provider_env.attacker.lynas_malaysia
+      - provider_env.attacker.mp_materials_usa
+      - provider_env.attacker.ndfeb_magnet_producers
+      - provider_env.attacker.ev_motor_producers_de
+      - provider_env.attacker.wind_turbine_producers
+      - provider_env.attacker.mri_producers
+      - provider_env.attacker.defense_industry_de
+      - provider_env.attacker.automotive_oem_de
+      - provider_env.attacker.katalysatoren_produktion
+      - provider_env.attacker.energiewende_wind
+      - provider_env.attacker.ev_market_de
+      - provider_env.attacker.patients_diagnostic
+      - provider_env.attacker.bundeswehr_readiness
+      - provider_env.attacker.recycling_infrastructure
+      - provider_env.attacker.alternative_magnet_tech
+      - provider_env.attacker.eu_crma
+    - name: defender
+      brain:
+        name: palaestrai.agent.dummy_brain:DummyBrain
+        params: {}
+      muscle:
+        name: palaestrai.agent.dummy_muscle:DummyMuscle
+        params: {}
+      objective:
+        name: provider_sim.env.objectives:DefenderObjective
+        params:
+          reward_id: reward.defender
+      sensors: *id001
+      actuators:
+      - provider_env.defender.china_rare_earth_mines
+      - provider_env.defender.myanmar_rare_earth_mines
+      - provider_env.defender.australia_rare_earth_mines
+      - provider_env.defender.china_separation_plants
+      - provider_env.defender.lynas_malaysia
+      - provider_env.defender.mp_materials_usa
+      - provider_env.defender.ndfeb_magnet_producers
+      - provider_env.defender.ev_motor_producers_de
+      - provider_env.defender.wind_turbine_producers
+      - provider_env.defender.mri_producers
+      - provider_env.defender.defense_industry_de
+      - provider_env.defender.automotive_oem_de
+      - provider_env.defender.katalysatoren_produktion
+      - provider_env.defender.energiewende_wind
+      - provider_env.defender.ev_market_de
+      - provider_env.defender.patients_diagnostic
+      - provider_env.defender.bundeswehr_readiness
+      - provider_env.defender.recycling_infrastructure
+      - provider_env.defender.alternative_magnet_tech
+      - provider_env.defender.eu_crma
+    simulation:
+      name: palaestrai.simulation.vanilla_sim_controller:VanillaSimController
+      conditions:
+      - name: palaestrai.simulation.vanilla_simcontroller_termination_condition:VanillaSimControllerTerminationCondition
+        params: {}
+    phase_config:
+      mode: train
+      worker: 1
+      episodes: 1
+run_config:
+  condition:
+    name: palaestrai.experiment.vanilla_rungovernor_termination_condition:VanillaRunGovernorTerminationCondition
+    params: {}
