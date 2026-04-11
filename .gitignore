@@ -5,3 +5,28 @@ dist/
 build/
 .pytest_cache/
 *.egg
+
+# OS
+.DS_Store
+
+# Claude local state
+.claude/
+
+# palaestrAI runtime (machine-specific)
+*.db
+*.db-journal
+palaestrai.db
+runtime.conf.yaml
+runtime-conf.yaml
+
+# Model checkpoints, weights, training logs
+experiments/checkpoints/
+_outputs/
+experiments/run.log
+
+# Generated analysis outputs
+analysis/
+
+# Large data exports
+experiments/data/*.json
+experiments/data/*.db
