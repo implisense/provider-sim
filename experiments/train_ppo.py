@@ -24,7 +24,7 @@ import time
 
 
 _BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_DEFAULT_CONFIG = os.path.join(_BASE, "experiments", "soja_arl_ppo.yaml")
+_DEFAULT_CONFIG = os.path.join(_BASE, "experiments", "configs", "soja_arl_ppo_vm.yaml")
 _CHECKPOINT_DIR = os.path.join(_BASE, "experiments", "checkpoints")
 _PROGRESS_FILE = os.path.join(_CHECKPOINT_DIR, "progress.json")
 

@@ -105,11 +105,20 @@ class PPOBrain(Brain):
                 if shard.dones.size > 0:
                     done = bool(shard.dones[-1])
                 rewards_df = shard.rewards
+                if not rewards_df.empty and len(self._reward_buf) == 0:
+                    print(f"[PPOBrain] reward columns: {list(rewards_df.columns)}")
                 if self._reward_id in rewards_df.columns:
                     ri = rewards_df[self._reward_id].iloc[-1]
                     r = float(np.asarray(ri.value).item())
-            except Exception:
-                pass
+                else:
+                    # Fallback: match by suffix (handles UID-prefix)
+                    for col in rewards_df.columns:
+                        if str(col).endswith(self._reward_id):
+                            ri = rewards_df[col].iloc[-1]
+                            r = float(np.asarray(ri.value).item())
+                            break
+            except Exception as exc:
+                print(f"[PPOBrain] memory read error: {exc}")
 
         # --- PPO-specific data from Muscle -----------------------------
         obs = np.asarray(
