@@ -52,10 +52,16 @@ def build_config(
 
     scenario_id = doc.scenario.id if hasattr(doc, "scenario") and doc.scenario else Path(pdl_path).stem
 
+    # NOTE (palaestrAI 3.5.8): the framework appends "SimulationController" to the
+    # simulation name if it doesn't already end with that suffix.  "VanillaSimController"
+    # triggers the append and produces the non-existent class
+    # "VanillaSimControllerSimulationController".  Use TakingTurnsSimulationController
+    # instead — it ends with the expected suffix and provides equivalent behaviour for
+    # dummy/PPO runs.
     config: Dict[str, Any] = {
         "uid": f"provider-{scenario_id}-arl-dummy",
         "seed": seed,
-        "version": "3.4.1",
+        "version": "3.5.8",
         "schedule": [
             {
                 "phase_train": {
@@ -112,7 +118,9 @@ def build_config(
                         },
                     ],
                     "simulation": {
-                        "name": "palaestrai.simulation.vanilla_sim_controller:VanillaSimController",
+                        # VanillaSimController triggers suffix-appending bug in 3.5.8;
+                        # TakingTurnsSimulationController has the correct suffix.
+                        "name": "palaestrai.simulation.taking_turns_simulation_controller:TakingTurnsSimulationController",
                         "conditions": [
                             {
                                 "name": "palaestrai.simulation.vanilla_simcontroller_termination_condition:VanillaSimControllerTerminationCondition",

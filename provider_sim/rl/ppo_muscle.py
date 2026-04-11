@@ -62,7 +62,7 @@ class PPOMuscle(Muscle):
 
         obs_list = []
         for s in sensors:
-            val = s.sensor_value
+            val = s.value
             if hasattr(val, "__iter__"):
                 obs_list.extend(float(v) for v in np.asarray(val).flatten())
             else:

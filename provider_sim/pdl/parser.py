@@ -65,7 +65,7 @@ def parse_percentage(raw: str) -> Percentage:
 # Internal converters
 # ---------------------------------------------------------------------------
 
-_KNOWN_ENTITY_FIELDS = {"id", "type", "name", "sector", "location", "vulnerability"}
+_KNOWN_ENTITY_FIELDS = {"id", "type", "name", "sector", "location", "vulnerability", "extra"}
 
 
 def _parse_scenario(d: Dict[str, Any]) -> Scenario:
@@ -79,7 +79,10 @@ def _parse_scenario(d: Dict[str, Any]) -> Scenario:
 
 
 def _parse_entity(d: Dict[str, Any]) -> Entity:
-    extra = {k: v for k, v in d.items() if k not in _KNOWN_ENTITY_FIELDS}
+    # Collect unknown top-level fields as extra, then merge explicit 'extra' block if present
+    extra: Dict[str, Any] = {k: v for k, v in d.items() if k not in _KNOWN_ENTITY_FIELDS}
+    if isinstance(d.get("extra"), dict):
+        extra.update(d["extra"])
     return Entity(
         id=d["id"],
         type=EntityType(d["type"]),

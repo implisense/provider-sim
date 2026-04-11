@@ -32,14 +32,49 @@ except ImportError:
             self.params = params
 
         @abstractmethod
-        def internal_reward(self, rewards: List[Any]) -> float:
+        def internal_reward(self, memory_or_rewards: Any, **kwargs: Any) -> float:
             raise NotImplementedError
 
     class RewardInformation:  # type: ignore[no-redef]
-        def __init__(self, reward_value: Any, observation_space: Any, reward_id: Any = None) -> None:
-            self.reward_value = reward_value
-            self.observation_space = observation_space
-            self.reward_id = reward_id
+        def __init__(self, value: Any = None, space: Any = None, uid: Any = None, **kwargs: Any) -> None:
+            self.value = value
+            self.space = space
+            self.uid = uid
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+
+def _extract_reward(memory_or_rewards: Any, reward_id: str) -> float:
+    """Extract a scalar reward value by ID.
+
+    Supports two call conventions:
+    - palaestrAI 3.5.8: ``memory`` is a ``Memory`` object; rewards are
+      accessed via ``memory.tail(1).rewards`` (a pandas DataFrame keyed by uid).
+    - Legacy / test path: ``memory_or_rewards`` is a plain
+      ``List[RewardInformation]``; rewards are accessed by ``.uid``.
+    """
+    if isinstance(memory_or_rewards, list):
+        for r in memory_or_rewards:
+            rid = getattr(r, "uid", None) or getattr(r, "reward_id", None)
+            if rid == reward_id:
+                val = getattr(r, "value", None)
+                if val is None:
+                    val = getattr(r, "reward_value", None)
+                return float(np.asarray(val).item())
+        return 0.0
+
+    # Memory object (palaestrAI 3.5.8)
+    try:
+        shard = memory_or_rewards.tail(1)
+        if shard.rewards.empty or reward_id not in shard.rewards.columns:
+            return 0.0
+        val = shard.rewards[reward_id].iloc[-1]
+        return float(np.asarray(val).item())
+    except Exception:
+        return 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -58,11 +93,8 @@ class AttackerObjective(_BaseObjective):
         super().__init__({"reward_id": reward_id, **kwargs})
         self._reward_id = reward_id
 
-    def internal_reward(self, rewards: List[RewardInformation]) -> float:
-        for r in rewards:
-            if r.reward_id == self._reward_id:
-                return float(np.asarray(r.reward_value).item())
-        return 0.0
+    def internal_reward(self, memory_or_rewards: Any, **kwargs: Any) -> float:
+        return _extract_reward(memory_or_rewards, self._reward_id)
 
 
 class DefenderObjective(_BaseObjective):
@@ -76,8 +108,5 @@ class DefenderObjective(_BaseObjective):
         super().__init__({"reward_id": reward_id, **kwargs})
         self._reward_id = reward_id
 
-    def internal_reward(self, rewards: List[RewardInformation]) -> float:
-        for r in rewards:
-            if r.reward_id == self._reward_id:
-                return float(np.asarray(r.reward_value).item())
-        return 0.0
+    def internal_reward(self, memory_or_rewards: Any, **kwargs: Any) -> float:
+        return _extract_reward(memory_or_rewards, self._reward_id)

@@ -48,24 +48,24 @@ class TestPalaestrAIProtocol:
         baseline = env.start_environment()
         sensor = baseline.sensors_available[0]
         assert isinstance(sensor, SensorInformation)
-        assert sensor.sensor_id == "entity.brazil_farms.supply"
-        assert isinstance(sensor.sensor_value, np.ndarray)
-        assert sensor.sensor_value.dtype == np.float32
+        assert sensor.uid == "entity.brazil_farms.supply"
+        assert isinstance(sensor.value, np.ndarray)
+        assert sensor.value.dtype == np.float32
 
     def test_actuator_information_types(self, soja_doc):
         env = ProviderEnvironment(soja_doc, seed=42)
         baseline = env.start_environment()
         actuator = baseline.actuators_available[0]
         assert isinstance(actuator, ActuatorInformation)
-        assert actuator.actuator_id == "attacker.brazil_farms"
+        assert actuator.uid == "attacker.brazil_farms"
 
     def test_discrete_sensor(self, soja_doc):
         env = ProviderEnvironment(soja_doc, seed=42)
         baseline = env.start_environment()
         # First event sensor is at index 20*4 = 80
         event_sensor = baseline.sensors_available[80]
-        assert "event." in event_sensor.sensor_id
-        assert isinstance(event_sensor.sensor_value, int)
+        assert "event." in event_sensor.uid
+        assert isinstance(event_sensor.value, int)
 
     def test_update_returns_state(self, soja_doc):
         env = ProviderEnvironment(soja_doc, seed=42)
@@ -74,9 +74,9 @@ class TestPalaestrAIProtocol:
         # Build an actuator action
         actuators = [
             ActuatorInformation(
-                np.array([0.5], dtype=np.float32),
-                _box_space(0, 1),
-                actuator_id="attacker.brazil_farms",
+                value=np.array([0.5], dtype=np.float32),
+                space=_box_space(0, 1),
+                uid="attacker.brazil_farms",
             )
         ]
         state = env.update(actuators)
@@ -91,15 +91,15 @@ class TestPalaestrAIProtocol:
         env.start_environment()
         state = env.update([])
         assert isinstance(state.rewards[0], RewardInformation)
-        assert state.rewards[0].reward_id == "reward.attacker"
-        assert state.rewards[1].reward_id == "reward.defender"
+        assert state.rewards[0].uid == "reward.attacker"
+        assert state.rewards[1].uid == "reward.defender"
 
     def test_rewards_zero_sum(self, soja_doc):
         env = ProviderEnvironment(soja_doc, seed=42)
         env.start_environment()
         state = env.update([])
-        attacker_r = float(np.asarray(state.rewards[0].reward_value).item())
-        defender_r = float(np.asarray(state.rewards[1].reward_value).item())
+        attacker_r = float(np.asarray(state.rewards[0].value).item())
+        defender_r = float(np.asarray(state.rewards[1].value).item())
         assert attacker_r + defender_r == pytest.approx(1.0)
 
     def test_done_after_max_ticks(self, soja_doc):
@@ -164,18 +164,18 @@ class TestUidPrepending:
         env = ProviderEnvironment(soja_doc, uid="test_uid")
         baseline = env.start_environment()
         for s in baseline.sensors_available:
-            assert not s.sensor_id.startswith(
+            assert not s.uid.startswith(
                 "test_uid."
-            ), f"Sensor ID already prefixed: {s.sensor_id}"
+            ), f"Sensor ID already prefixed: {s.uid}"
 
     def test_actuator_ids_are_bare(self, soja_doc):
         """Environment must return bare actuator IDs (no uid prefix)."""
         env = ProviderEnvironment(soja_doc, uid="test_uid")
         baseline = env.start_environment()
         for a in baseline.actuators_available:
-            assert not a.actuator_id.startswith(
+            assert not a.uid.startswith(
                 "test_uid."
-            ), f"Actuator ID already prefixed: {a.actuator_id}"
+            ), f"Actuator ID already prefixed: {a.uid}"
 
     def test_reward_ids_are_bare(self, soja_doc):
         """Rewards must use bare IDs (framework never prepends rewards)."""
@@ -183,9 +183,9 @@ class TestUidPrepending:
         env.start_environment()
         state = env.update([])
         for r in state.rewards:
-            assert not r.reward_id.startswith(
+            assert not r.uid.startswith(
                 "test_uid."
-            ), f"Reward ID prefixed: {r.reward_id}"
+            ), f"Reward ID prefixed: {r.uid}"
 
     def test_update_with_bare_actuators(self, soja_doc):
         """Simulate framework round-trip: prepend uid, remove uid, then update()."""
@@ -193,10 +193,10 @@ class TestUidPrepending:
         baseline = env.start_environment()
         # Simulate _prepend_uid: prefix all actuator IDs
         for a in baseline.actuators_available:
-            a.actuator_id = f"test_uid.{a.actuator_id}"
+            a.uid = f"test_uid.{a.uid}"
         # Simulate _remove_uid: strip prefix before calling update
         for a in baseline.actuators_available:
-            a.actuator_id = a.actuator_id.removeprefix("test_uid.")
+            a.uid = a.uid.removeprefix("test_uid.")
         # update() should work with bare IDs
         state = env.update(baseline.actuators_available)
         assert len(state.sensor_information) == 136
