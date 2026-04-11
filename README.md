@@ -16,16 +16,27 @@ Das Paket besteht aus drei unabhängigen Schichten:
 | `provider_sim.sim` | PyYAML, NumPy | 5-Phasen-Simulationsengine |
 | `provider_sim.env` | PyYAML, NumPy, palaestrAI (optional) | palaestrAI-Environment-Wrapper |
 
+## Voraussetzungen
+
+**Python 3.11** ist erforderlich. In Python 3.10 deadlockt `palaestrai experiment-start`
+durch einen `asyncio.TimeoutError`-Bug (behoben in 3.11).
+
 ## Installation
 
 ```bash
 pip install -e ".[dev]"
 ```
 
-Für palaestrAI-Integration:
+Für palaestrAI-Integration (Linux-VM empfohlen):
 
 ```bash
 pip install -e ".[rl,dev]"
+```
+
+Auf einer Linux-VM nach `git clone`:
+
+```bash
+bash setup_vm.sh   # erstellt runtime.conf.yaml, palaestrai-DB, installiert Paket
 ```
 
 ## Quickstart
@@ -37,7 +48,7 @@ from provider_sim.pdl.parser import load_pdl
 
 doc = load_pdl("path/to/s1-soja.pdl.yaml")
 print(f"{len(doc.entities)} Entities, {len(doc.events)} Events")
-# 20 Entities, 18 Events
+# 20 Entities, 55 Events
 ```
 
 ### Simulation ausführen
@@ -72,21 +83,21 @@ env = ProviderEnvironment("path/to/s1-soja.pdl.yaml", seed=42, max_ticks=365)
 baseline = env.start_environment()
 
 print(f"{len(baseline.sensors_available)} Sensoren, {len(baseline.actuators_available)} Aktuatoren")
-# 99 Sensoren, 40 Aktuatoren
+# 136 Sensoren, 40 Aktuatoren
 
 # Agent-Aktion als ActuatorInformation
 actuators = [
     ActuatorInformation(
-        np.array([0.5], dtype=np.float32),
-        _box_space(0, 1),
-        actuator_id="attacker.brazil_farms",
+        value=np.array([0.5], dtype=np.float32),
+        space=_box_space(0, 1),
+        uid="attacker.brazil_farms",
     )
 ]
 state = env.update(actuators)
 
 print(f"Tick: {state.simtime.simtime_ticks}, Done: {state.done}")
-print(f"Attacker-Reward: {float(state.rewards[0].reward_value):.3f}")
-print(f"Defender-Reward: {float(state.rewards[1].reward_value):.3f}")
+print(f"Attacker-Reward: {float(state.rewards[0].value):.3f}")
+print(f"Defender-Reward: {float(state.rewards[1].value):.3f}")
 ```
 
 ### Standalone-Nutzung (Dict-API, ohne Orchestrator)
@@ -144,7 +155,7 @@ Implementiert das palaestrAI `Environment` ABC mit zwei APIs:
 
 | Typ | Schema | Beispiel (Soja) |
 |---|---|---|
-| Sensoren | `SensorInformation` mit `Box`/`Discrete` Spaces, 4 pro Entity + 1 pro Event + 1 global | 20×4 + 18 + 1 = **99** |
+| Sensoren | `SensorInformation` mit `Box`/`Discrete` Spaces, 4 pro Entity + 1 pro Event + 1 global | 20×4 + 55 + 1 = **136** |
 | Aktuatoren | `ActuatorInformation` mit `Box(0, 1)`, 2 pro Entity (Attacker + Defender) | 20×2 = **40** |
 | Rewards | `RewardInformation`, Zero-Sum: `attacker = mean(1−health)`, `defender = mean(health)` | Summe = 1.0 |
 
@@ -156,7 +167,7 @@ Alle 9 PROVIDER-Szenarien werden geladen und simuliert:
 
 | # | Szenario | Entities | Events |
 |---|---|---|---|
-| S1 | Soja-Futtermittel | 20 | 18 |
+| S1 | Soja-Futtermittel | 20 | 55 |
 | S2 | Halbleiter | 25 | 23 |
 | S3 | Pharma | 24 | 18 |
 | S4 | Düngemittel/AdBlue | 28 | 25 |

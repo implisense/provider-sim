@@ -8,9 +8,13 @@ Dieses Paket ist der Python-Kern der PROVIDER-Simulation: PDL-Parser, Simulation
 
 Alle Kommunikation auf Deutsch. Code-Bezeichner, Docstrings und Kommentare bleiben Englisch.
 
-## Sprache
+## Python-Version
 
-Alle Kommunikation auf Deutsch. Code-Bezeichner, Docstrings und Kommentare bleiben Englisch.
+**Python 3.11 erforderlich** fuer `palaestrai experiment-start`. In Python 3.10 ist
+`asyncio.TimeoutError is TimeoutError == False` — palaestrAI 3.5.8 faengt die Exception
+nicht ab und haengt. Ab 3.11 sind beide identisch.
+
+Empfohlenes Conda-Environment: `provider311` (Python 3.11 + palaestrAI 3.5.8).
 
 ## Kommandos
 
@@ -18,24 +22,31 @@ Alle Kommunikation auf Deutsch. Code-Bezeichner, Docstrings und Kommentare bleib
 # Paket installieren (editable, mit Test-Deps)
 pip install -e ".[dev]"
 
-# Tests ausfuehren (95 Tests)
+# Tests ausfuehren
 pytest tests/ -v
 
 # Einzelnen Test ausfuehren
 pytest tests/test_sim_engine.py::TestSimulationEngine::test_step -v
 
-# PPO-Training starten (externer Loop, fortsetzbar mit Ctrl+C)
-python experiments/train_ppo.py 50
+# AutoRL-Training (macOS, MPS-beschleunigt, kein palaestrAI-CLI noetig)
+python experiments/autorl_train.py
 
-# Einzelne palaestrAI-Episode (NICHT mit -vv!)
-palaestrai experiment-start experiments/soja_arl_ppo.yaml
+# Einzelne palaestrAI-Episode (NICHT mit -vv!, nur Linux/Python 3.11)
+palaestrai experiment-start experiments/configs/soja_arl_dummy.yaml
 
-# Baseline-Experiment (DummyBrain, kein RL)
-palaestrai experiment-start experiments/soja_arl_dummy.yaml
-
-# Stale Prozesse bereinigen (nach Abbruechen noetig)
-pkill -f "palaestrai" && pkill -f "spawn_main" && pkill -f "resource_tracker"
+# Stale Prozesse + Ports bereinigen (nach Abbruechen noetig)
+pkill -f "palaestrai"; pkill -f "spawn_main"; fuser -k 4242/tcp 4243/tcp 2>/dev/null
 ```
+
+## VM-Setup (Linux)
+
+Nach `git clone` einmalig ausfuehren:
+
+```bash
+bash setup_vm.sh   # erstellt runtime.conf.yaml, palaestrai.db, installiert Paket
+```
+
+Voraussetzung: Python 3.11 Conda-Environment aktiv (`conda activate provider311`).
 
 ## Architektur
 
