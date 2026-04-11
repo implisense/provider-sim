@@ -28,6 +28,10 @@ _DEFAULT_CONFIG = os.path.join(_BASE, "experiments", "configs", "soja_arl_ppo_vm
 _CHECKPOINT_DIR = os.path.join(_BASE, "experiments", "checkpoints")
 _PROGRESS_FILE = os.path.join(_CHECKPOINT_DIR, "progress.json")
 
+# Resolve palaestrai CLI from the same bin/ as the running Python interpreter
+# so the script works regardless of how Python was invoked (conda run, explicit path, etc.)
+_PALAESTRAI = os.path.join(os.path.dirname(sys.executable), "palaestrai")
+
 
 def _load_progress() -> dict:
     if os.path.isfile(_PROGRESS_FILE):
@@ -52,7 +56,7 @@ def _run_episode(config: str, ep: int, total: int) -> bool:
     print(f"  Episode {ep}/{total}")
     print(f"{'='*60}")
     result = subprocess.run(
-        ["palaestrai", "experiment-start", config],
+        [_PALAESTRAI, "experiment-start", config],
         cwd=_BASE,
     )
     return result.returncode == 0
