@@ -50,12 +50,12 @@ class PPOMuscle(Muscle):
             print(f"[PPOMuscle] Loaded checkpoint: {self._checkpoint_path}")
         self._net.eval()  # inference mode
 
-    def propose_actions(self, sensors, actuators_available, is_terminal: bool = False):
+    def propose_actions(self, sensors, actuators_available):
         """Propose budget-constrained actions via PPO policy.
 
-        Returns:
-            4-Tuple (env_actions, last_actions, last_inputs, additional_data)
-            additional_data contains sampled_logits, log_prob, value for Brain.
+        Returns (palaestrAI 3.5.8 API):
+            2-Tuple (actuator_setpoints, data_for_brain)
+            data_for_brain: dict with obs, sampled_logits, log_prob, value for PPOBrain.
         """
         if self._net is None:
             self.setup()
@@ -67,10 +67,10 @@ class PPOMuscle(Muscle):
                 obs_list.extend(float(v) for v in np.asarray(val).flatten())
             else:
                 obs_list.append(float(val))
-        obs = torch.tensor(obs_list, dtype=torch.float32).to(_DEVICE)
+        obs_t = torch.tensor(obs_list, dtype=torch.float32).to(_DEVICE)
 
         with torch.no_grad():
-            actions_t, sampled_logits, log_prob, value = self._net.sample_action(obs, self._budget)
+            actions_t, sampled_logits, log_prob, value = self._net.sample_action(obs_t, self._budget)
 
         actions_np = np.array(actions_t.tolist(), dtype=np.float32)
         sampled_logits_np = np.array(sampled_logits.tolist(), dtype=np.float32)
@@ -80,12 +80,13 @@ class PPOMuscle(Muscle):
             setpoint = np.array([float(np.clip(act_val, 0.0, 1.0))], dtype=np.float32)
             actuator(setpoint)
 
-        additional_data = {
+        data_for_brain = {
+            "obs": np.array(obs_list, dtype=np.float32),
             "sampled_logits": sampled_logits_np,
             "log_prob": log_prob.item(),
             "value": value.item(),
         }
-        return (actuators_available, actuators_available, obs_list, additional_data)
+        return (actuators_available, data_for_brain)
 
     def update(self, update) -> None:
         """Load new state_dict from Brain after PPO update."""

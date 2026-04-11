@@ -1,11 +1,10 @@
-"""PPO Brain: trajectory accumulation + PPO update."""
+"""PPO Brain: trajectory accumulation + PPO update (palaestrAI 3.5.8)."""
 from __future__ import annotations
 
 from typing import Any
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.distributions import Normal
 
 from provider_sim.rl.network import PPONet
 
@@ -13,29 +12,27 @@ _DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
 try:
     from palaestrai.agent.brain import Brain
-    from palaestrai.core.protocol.muscle_update_rsp import MuscleUpdateResponse
 except ImportError:
     class Brain:  # type: ignore[no-redef]
         def __init__(self, *args, **kwargs):
-            pass
-
-    class MuscleUpdateResponse:  # type: ignore[no-redef]
-        def __init__(self, is_updated: bool, updates: Any):
-            self.is_updated = is_updated
-            self.updates = updates
+            self._memory = None
 
 
 class PPOBrain(Brain):
-    """PPO Brain for palaestrAI.
+    """PPO Brain for palaestrAI 3.5.8.
 
-    Accumulates one full episode, then runs PPO update on done=True.
+    Accumulates one full episode via thinking() callbacks, then runs PPO
+    update on done=True and returns the new state_dict to the Muscle.
 
-    Params (YAML): n_obs, n_act, lr, gamma, gae_lambda, clip_eps, ppo_epochs, value_coef, entropy_coef
+    YAML params: n_obs, n_act, reward_id, lr, gamma, gae_lambda,
+                 clip_eps, ppo_epochs, value_coef, entropy_coef,
+                 min_episode_steps, checkpoint_path
     """
 
     def __init__(
         self, *args,
-        n_obs: int = 99, n_act: int = 20,
+        n_obs: int = 136, n_act: int = 20,
+        reward_id: str = "reward.defender",
         lr: float = 3e-4, gamma: float = 0.99, gae_lambda: float = 0.95,
         clip_eps: float = 0.2, ppo_epochs: int = 4,
         value_coef: float = 0.5, entropy_coef: float = 0.01,
@@ -46,9 +43,10 @@ class PPOBrain(Brain):
         try:
             super().__init__(*args, **kwargs)
         except TypeError:
-            pass  # standalone usage without palaestrAI orchestrator
+            pass
         self._n_obs = int(n_obs)
         self._n_act = int(n_act)
+        self._reward_id = str(reward_id)
         self._lr = float(lr)
         self._gamma = float(gamma)
         self._gae_lambda = float(gae_lambda)
@@ -59,14 +57,12 @@ class PPOBrain(Brain):
         self._min_episode_steps = int(min_episode_steps)
         self._checkpoint_path = str(checkpoint_path)
 
-        # Init on CPU: palaestrAI spawns Brain in a subprocess via multiprocessing,
-        # which requires serialization. MPS tensors cannot cross process boundaries.
-        # _ensure_on_device() moves to MPS lazily before the first PPO update.
+        # Init on CPU: subprocess spawn requires pickling; MPS tensors cannot
+        # cross process boundaries. _ensure_on_device() moves lazily on first update.
         self._net = PPONet(n_obs=self._n_obs, n_act=self._n_act)
         self._optimizer = torch.optim.Adam(self._net.parameters(), lr=self._lr)
         self._on_device = False
 
-        # Auto-load checkpoint from previous training run (external loop)
         import os
         if self._checkpoint_path and os.path.isfile(self._checkpoint_path):
             self._net.load_state_dict(
@@ -84,80 +80,102 @@ class PPOBrain(Brain):
         self._total_reward = 0.0
 
     # ------------------------------------------------------------------
-    # palaestrAI Brain ABC
+    # palaestrAI Brain ABC (3.5.8)
     # ------------------------------------------------------------------
 
-    def thinking(self, muscle_id, readings, actions, reward, next_state, done, additional_data) -> MuscleUpdateResponse:
+    def thinking(self, muscle_id: str, data_from_muscle: Any) -> Any:
         """Called after each environment step.
 
-        Appends transition to buffer. On done=True: runs PPO update and returns new state_dict.
+        data_from_muscle: dict sent by PPOMuscle with obs, sampled_logits,
+        log_prob, value. done + reward are read from self._memory (populated
+        by the framework before this call).
+
+        Returns state_dict on episode end, None otherwise.
         """
-        # Extract scalar reward
-        if isinstance(reward, (int, float)):
-            r = float(reward)
-        elif isinstance(reward, list) and len(reward) > 0:
+        if data_from_muscle is None:
+            return None
+
+        # --- Read done + reward from framework-managed memory ----------
+        done = False
+        r = 0.0
+        memory = getattr(self, "_memory", None)
+        if memory is not None:
             try:
-                r = float(self.objective.internal_reward(reward))
+                shard = memory.tail(1)
+                if shard.dones.size > 0:
+                    done = bool(shard.dones[-1])
+                rewards_df = shard.rewards
+                if self._reward_id in rewards_df.columns:
+                    ri = rewards_df[self._reward_id].iloc[-1]
+                    r = float(np.asarray(ri.value).item())
             except Exception:
-                r = float(np.mean([float(ri.reward_value) for ri in reward]))
-        else:
-            r = 0.0
+                pass
+
+        # --- PPO-specific data from Muscle -----------------------------
+        obs = np.asarray(
+            data_from_muscle.get("obs", np.zeros(self._n_obs)), dtype=np.float32
+        )
+        sampled_logits = np.asarray(
+            data_from_muscle.get("sampled_logits", np.zeros(self._n_act)),
+            dtype=np.float32,
+        )
+        log_prob = float(data_from_muscle.get("log_prob", 0.0))
+        value = float(data_from_muscle.get("value", 0.0))
 
         self._total_reward += r
-        obs = self._extract_obs(readings)
-        if not isinstance(additional_data, dict):
-            additional_data = {}
-        sampled_logits = additional_data.get("sampled_logits", np.zeros(self._n_act))
-        log_prob = float(additional_data.get("log_prob", 0.0))
-        value = float(additional_data.get("value", 0.0))
-
         self._obs_buf.append(obs)
-        self._logits_buf.append(np.asarray(sampled_logits, dtype=np.float32))
+        self._logits_buf.append(sampled_logits)
         self._reward_buf.append(r)
         self._log_prob_buf.append(log_prob)
         self._value_buf.append(value)
-        self._done_buf.append(bool(done))
+        self._done_buf.append(done)
 
         if not done:
-            return MuscleUpdateResponse(False, None)
+            return None
 
         steps = len(self._reward_buf)
-
-        # palaestrAI sends a spurious terminal signal at the end of a multi-episode
-        # run (the SimController's else-branch fires once after restart, followed by
-        # ex_termination=True after ~1 tick).  Skip PPO update for such micro-episodes.
         if steps < self._min_episode_steps:
             print(
-                f"\n[PPOBrain] Skipped spurious terminal episode "
-                f"(steps={steps} < min_episode_steps={self._min_episode_steps})"
+                f"[PPOBrain] Skipped spurious episode "
+                f"(steps={steps} < min={self._min_episode_steps})"
             )
-            self._obs_buf.clear()
-            self._logits_buf.clear()
-            self._reward_buf.clear()
-            self._log_prob_buf.clear()
-            self._value_buf.clear()
-            self._done_buf.clear()
-            self._total_reward = 0.0
-            return MuscleUpdateResponse(False, None)
+            self._clear_buffers()
+            return None
 
         self._episode += 1
         avg_r = self._total_reward / max(steps, 1)
         print(
             f"\n[PPOBrain] Episode {self._episode}  "
-            f"steps={steps}  "
-            f"reward={avg_r:.4f}  "
-            f"total={self._total_reward:.4f}"
+            f"steps={steps}  reward={avg_r:.4f}  total={self._total_reward:.4f}"
         )
 
         state_dict = self._ppo_update(next_value=0.0)
 
-        # Persist checkpoint for external training loop
         if self._checkpoint_path:
             import os
             os.makedirs(os.path.dirname(self._checkpoint_path) or ".", exist_ok=True)
             torch.save(state_dict, self._checkpoint_path)
-            print(f"[PPOBrain] Checkpoint saved: {self._checkpoint_path}")
+            print(f"[PPOBrain] Checkpoint: {self._checkpoint_path}")
 
+        self._clear_buffers()
+        # Return payload directly — framework wraps in MuscleUpdateResponse
+        return state_dict
+
+    def store_model(self, path: str) -> None:
+        import os
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        torch.save(self._net.state_dict(), path)
+
+    def load_model(self, path: str) -> None:
+        self._net.load_state_dict(
+            torch.load(path, map_location=_DEVICE, weights_only=True)
+        )
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _clear_buffers(self) -> None:
         self._obs_buf.clear()
         self._logits_buf.clear()
         self._reward_buf.clear()
@@ -166,45 +184,13 @@ class PPOBrain(Brain):
         self._done_buf.clear()
         self._total_reward = 0.0
 
-        return MuscleUpdateResponse(True, state_dict)
-
-    def store_model(self, path: str) -> None:
-        import os
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        torch.save(self._net.state_dict(), path)
-
-    def load_model(self, path: str) -> None:
-        self._net.load_state_dict(torch.load(path, map_location=_DEVICE, weights_only=True))
-
-    # ------------------------------------------------------------------
-    # PPO helpers
-    # ------------------------------------------------------------------
-
     def _ensure_on_device(self) -> None:
-        """Move net + optimizer to _DEVICE on first call (after subprocess spawn)."""
         if not self._on_device:
             self._net = self._net.to(_DEVICE)
             self._optimizer = torch.optim.Adam(self._net.parameters(), lr=self._lr)
             self._on_device = True
 
-    def _extract_obs(self, sensors) -> np.ndarray:
-        if sensors is None:
-            return np.zeros(self._n_obs, dtype=np.float32)
-        obs_list = []
-        for s in sensors:
-            if not hasattr(s, "sensor_value"):
-                # plain float/number passed directly
-                obs_list.append(float(s))
-                continue
-            val = s.sensor_value
-            if hasattr(val, "__iter__"):
-                obs_list.extend(float(v) for v in np.asarray(val).flatten())
-            else:
-                obs_list.append(float(val))
-        return np.array(obs_list, dtype=np.float32)
-
-    def _compute_gae(self, next_value: float) -> tuple:
-        """Compute GAE advantages and discounted returns."""
+    def _compute_gae(self, next_value: float):
         T = len(self._reward_buf)
         values = self._value_buf + [next_value]
         advantages = np.zeros(T, dtype=np.float32)
@@ -223,11 +209,10 @@ class PPOBrain(Brain):
         return adv_t, torch.tensor(returns.tolist(), dtype=torch.float32)
 
     def _ppo_update(self, next_value: float) -> dict:
-        """Run PPO update on accumulated trajectory. Returns new state_dict."""
         self._ensure_on_device()
         obs_t = torch.tensor(np.stack(self._obs_buf).tolist(), dtype=torch.float32).to(_DEVICE)
         logits_t = torch.tensor(np.stack(self._logits_buf).tolist(), dtype=torch.float32).to(_DEVICE)
-        old_log_prob_t = torch.tensor(self._log_prob_buf, dtype=torch.float32).to(_DEVICE)
+        old_lp_t = torch.tensor(self._log_prob_buf, dtype=torch.float32).to(_DEVICE)
         advantages, returns = self._compute_gae(next_value)
         advantages = advantages.to(_DEVICE)
         returns = returns.to(_DEVICE)
@@ -235,11 +220,11 @@ class PPOBrain(Brain):
         self._net.train()
         actor_loss = critic_loss = entropy = torch.tensor(0.0)
         for _ in range(self._ppo_epochs):
-            new_log_prob, new_value, entropy = self._net.recompute_logprob(obs_t, logits_t)
-            ratio = torch.exp(new_log_prob - old_log_prob_t)
+            new_lp, new_val, entropy = self._net.recompute_logprob(obs_t, logits_t)
+            ratio = torch.exp(new_lp - old_lp_t)
             clipped = torch.clamp(ratio, 1.0 - self._clip_eps, 1.0 + self._clip_eps)
             actor_loss = -torch.min(ratio * advantages, clipped * advantages).mean()
-            critic_loss = F.mse_loss(new_value, returns)
+            critic_loss = F.mse_loss(new_val, returns)
             loss = actor_loss + self._value_coef * critic_loss - self._entropy_coef * entropy
             self._optimizer.zero_grad()
             loss.backward()
@@ -248,7 +233,7 @@ class PPOBrain(Brain):
 
         self._net.eval()
         print(
-            f"[PPOBrain] PPO update done  "
+            f"[PPOBrain] PPO update  "
             f"actor={actor_loss.item():.4f}  "
             f"critic={critic_loss.item():.4f}  "
             f"entropy={entropy.item():.4f}"
