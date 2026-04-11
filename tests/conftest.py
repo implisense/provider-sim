@@ -9,9 +9,11 @@ import pytest
 from provider_sim.pdl.parser import load_pdl
 from provider_sim.sim.engine import SimulationEngine
 
-SCENARIOS_DIR = (
-    Path(__file__).parent.parent.parent.parent / "06_Szenarien" / "scenarios"
-)
+_REPO_ROOT = Path(__file__).parent.parent
+# Prefer local scenarios/ in the repo; fall back to parent PROVIDER tree
+_LOCAL_SCENARIOS = _REPO_ROOT / "scenarios"
+_PROVIDER_SCENARIOS = _REPO_ROOT.parent.parent.parent / "06_Szenarien" / "scenarios"
+SCENARIOS_DIR = _LOCAL_SCENARIOS if _LOCAL_SCENARIOS.exists() else _PROVIDER_SCENARIOS
 
 SOJA_PATH = SCENARIOS_DIR / "s1-soja.pdl.yaml"
 
