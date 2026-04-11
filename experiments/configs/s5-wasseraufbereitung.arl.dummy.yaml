@@ -203,7 +203,7 @@ schedule:
       - provider_env.defender.dialysis_centers
       - provider_env.defender.hygiene_products
     simulation:
-      name: palaestrai.simulation.vanilla_sim_controller:VanillaSimController
+      name: provider_sim.sim.vanilla_shim:VanillaSimulationController
       conditions:
       - name: palaestrai.simulation.vanilla_simcontroller_termination_condition:VanillaSimControllerTerminationCondition
         params: {}

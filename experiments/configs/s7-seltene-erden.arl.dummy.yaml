@@ -186,7 +186,7 @@ schedule:
       - provider_env.defender.alternative_magnet_tech
       - provider_env.defender.eu_crma
     simulation:
-      name: palaestrai.simulation.vanilla_sim_controller:VanillaSimController
+      name: provider_sim.sim.vanilla_shim:VanillaSimulationController
       conditions:
       - name: palaestrai.simulation.vanilla_simcontroller_termination_condition:VanillaSimControllerTerminationCondition
         params: {}

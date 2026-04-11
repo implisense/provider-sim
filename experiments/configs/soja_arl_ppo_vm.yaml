@@ -221,7 +221,7 @@ schedule:
       conditions:
       - name: palaestrai.simulation.vanilla_simcontroller_termination_condition:VanillaSimControllerTerminationCondition
         params: {}
-      name: palaestrai.simulation.vanilla_sim_controller:VanillaSimController
+      name: provider_sim.sim.vanilla_shim:VanillaSimulationController
 seed: 42
 uid: provider-soy-arl-ppo
 version: 3.5.8
