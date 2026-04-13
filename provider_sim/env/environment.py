@@ -200,7 +200,11 @@ class ProviderEnvironment(_BaseEnv):
         **kwargs: Any,
     ) -> None:
         if _HAS_PALAESTRAI:
-            super().__init__(uid=uid, seed=seed)
+            try:
+                super().__init__(uid=uid, seed=seed)
+            except TypeError:
+                # palaestrAI 3.4.1 requires broker_uri as positional arg
+                super().__init__(uid=uid, seed=seed, broker_uri=broker_uri)
         else:
             super().__init__()
 
